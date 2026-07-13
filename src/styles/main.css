@@ -1,0 +1,55 @@
+/* Layout + component styles. Section internals are placeholders until Phase 2. */
+
+.site-header {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: var(--z-header);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-5) var(--gutter);
+  background: linear-gradient(to bottom, var(--color-bg-overlay), transparent);
+}
+
+.site-header__mark {
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  letter-spacing: var(--tracking-wide);
+}
+
+.site-header__nav {
+  display: flex;
+  gap: var(--space-6);
+}
+
+.site-header__nav a {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  transition: color var(--duration-fast) var(--ease-premium);
+}
+
+.site-header__nav a:hover {
+  color: var(--color-text);
+}
+
+.section {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--space-section-y) var(--gutter);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.section__label {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: var(--text-lg);
+  color: var(--color-text-faint);
+  letter-spacing: var(--tracking-tight);
+}
+
+.section--hero {
+  background: var(--color-bg-elevated);
+}
