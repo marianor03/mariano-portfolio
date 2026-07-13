@@ -1,24 +1,29 @@
 /*
   Design tokens.
   Palette: near-black canvas + warm off-white type + a single restrained
-  brass/gold accent. Two-typeface pairing: Fraunces (editorial serif, for
-  display moments) and Inter (body/UI). One accent, used sparingly, reads
-  more premium than a multi-color system.
+  mint accent (contrast-verified 17.5:1 on bg). Fraunces (editorial serif,
+  section headings) + Inter (body/UI), plus Anton reserved solely for the
+  hero nameplate — a deliberate one-off "wordmark" treatment, not part of
+  the repeating heading system.
+
+  --color-bg is sampled directly from the studio portraits' own backdrop
+  (averaged corner pixels across all three shots: ~rgb(6,7,9)) so the page
+  canvas and the photos' background are the same color with no visible seam.
 */
 :root {
   /* Color: surfaces */
-  --color-bg: #0c0c0d;
-  --color-bg-elevated: #141416;
-  --color-bg-overlay: rgba(12, 12, 13, 0.72);
+  --color-bg: #060709;
+  --color-bg-elevated: #0d0f12;
+  --color-bg-overlay: rgba(6, 7, 9, 0.72);
 
   /* Color: text */
   --color-text: #f3f1ec;
   --color-text-muted: #9d9a93;
-  --color-text-faint: #656460;
+  --color-text-faint: #807e79; /* lightened from #656460 to clear 4.5:1 on --color-bg (was 3.4:1) */
 
-  /* Color: accent (brass/gold) */
-  --color-accent: #c6a15b;
-  --color-accent-strong: #e3c07d;
+  /* Color: accent (pale mint) — contrast-verified against --color-bg */
+  --color-accent: #cff7ef;
+  --color-accent-strong: #9fe8d9;
 
   /* Color: hairlines */
   --color-border: rgba(245, 244, 240, 0.1);
@@ -26,6 +31,7 @@
 
   /* Typography */
   --font-display: 'Fraunces', 'Iowan Old Style', serif;
+  --font-nameplate: 'Anton', 'Archivo Black', sans-serif;
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
   /* Fluid type scale (~1.25 ratio) */
@@ -75,7 +81,10 @@
   --duration-base: 0.4s;
   --duration-slow: 0.8s;
 
-  /* Z-index */
+  /* Z-index scale */
+  --z-raised: 1;
+  --z-overlay: 3;
+  --z-loader: 5;
   --z-header: 50;
-  --z-hero: 10;
+  --z-skip-link: 100;
 }

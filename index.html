@@ -12,15 +12,19 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Anton&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
 
     <link rel="stylesheet" href="/src/styles/tokens.css" />
     <link rel="stylesheet" href="/src/styles/base.css" />
     <link rel="stylesheet" href="/src/styles/main.css" />
+    <link rel="stylesheet" href="/src/styles/hero.css" />
+    <link rel="stylesheet" href="/src/styles/sections.css" />
   </head>
   <body>
+    <a class="skip-link" href="#main">Skip to main content</a>
+
     <header class="site-header">
       <a class="site-header__mark" href="#hero">MR</a>
       <nav class="site-header__nav" aria-label="Primary">
@@ -31,30 +35,189 @@
       </nav>
     </header>
 
-    <main id="app">
-      <!-- HERO — pinned three-portrait scroll sequence built in Phase 2 -->
-      <section id="hero" class="section section--hero" data-section="hero">
-        <div class="section__label">Hero — placeholder</div>
+    <main id="main">
+      <!-- HERO — pinned three-portrait scroll sequence -->
+      <section id="hero" class="hero" data-hero data-section="hero">
+        <div class="hero__photo-panel">
+          <div class="hero__frame" data-hero-frame>
+            <img
+              class="hero__image"
+              data-hero-image
+              src="/images/portraits/profile-left.jpg"
+              alt="Mariano Regalado, studio portrait, left profile"
+            />
+          </div>
+          <div class="hero__frame" data-hero-frame>
+            <img
+              class="hero__image"
+              data-hero-image
+              src="/images/portraits/frontal.jpg"
+              alt="Mariano Regalado, studio portrait, facing forward"
+            />
+          </div>
+          <div class="hero__frame" data-hero-frame>
+            <img
+              class="hero__image"
+              data-hero-image
+              src="/images/portraits/arms-crossed.jpg"
+              alt="Mariano Regalado, studio portrait, arms crossed, half body"
+            />
+          </div>
+          <div class="hero__loader" data-hero-loader aria-hidden="true"></div>
+        </div>
+
+        <div class="hero__scrim" aria-hidden="true"></div>
+
+        <div class="hero__content">
+          <h1 class="hero__nameplate">
+            <span class="hero__nameplate-outline">Mariano</span>
+            <span class="hero__nameplate-fill">Regalado.</span>
+          </h1>
+
+          <div class="hero__meta">
+            <p class="hero__meta-line" data-hero-beat>
+              Full-stack developer <span class="hero__meta-dot" aria-hidden="true"></span> React · Python · JavaScript
+            </p>
+            <p class="hero__meta-line" data-hero-beat>
+              Design-minded engineering <span class="hero__meta-dot" aria-hidden="true"></span> Tailwind-driven interfaces
+            </p>
+            <p class="hero__meta-line" data-hero-beat>
+              Open to opportunities <span class="hero__meta-dot" aria-hidden="true"></span> Scroll for the work
+            </p>
+          </div>
+        </div>
+
+        <div class="hero__scroll-cue" data-hero-scroll-cue aria-hidden="true">
+          <span>Scroll</span>
+          <i></i>
+        </div>
       </section>
 
       <!-- ABOUT -->
       <section id="about" class="section section--about" data-section="about">
-        <div class="section__label">About — placeholder</div>
+        <div class="container about">
+          <p class="eyebrow" data-reveal>About</p>
+          <div class="about__grid">
+            <div class="about__copy" data-reveal>
+              <h2 class="section-heading">
+                Placeholder bio paragraph — replace with a real, specific story about how
+                Mariano works, what he's drawn to, and the kind of problems he likes solving.
+              </h2>
+              <p class="body-text">
+                Second placeholder paragraph. A sentence or two of texture: background,
+                what led into development, what's distinctive about the approach. Keep it
+                short — recruiters skim.
+              </p>
+            </div>
+            <dl class="about__facts" data-reveal>
+              <div class="about__fact">
+                <dt>Based in</dt>
+                <dd>Placeholder City</dd>
+              </div>
+              <div class="about__fact">
+                <dt>Focus</dt>
+                <dd>Front-end &amp; full-stack</dd>
+              </div>
+              <div class="about__fact">
+                <dt>Currently</dt>
+                <dd>Placeholder status</dd>
+              </div>
+            </dl>
+          </div>
+        </div>
       </section>
 
       <!-- PROJECTS -->
       <section id="projects" class="section section--projects" data-section="projects">
-        <div class="section__label">Projects — placeholder</div>
+        <div class="container">
+          <p class="eyebrow" data-reveal>Selected work</p>
+          <h2 class="section-heading" data-reveal>Projects — placeholder</h2>
+
+          <ul class="projects__list">
+            <li class="project-card" data-reveal>
+              <span class="project-card__index">01</span>
+              <h3 class="project-card__title">Project One</h3>
+              <p class="project-card__desc">Short placeholder description of what it does and the problem it solves.</p>
+              <ul class="project-card__tags">
+                <li>React</li>
+                <li>Tailwind</li>
+              </ul>
+              <a class="project-card__link" href="#">View project →</a>
+            </li>
+            <li class="project-card" data-reveal>
+              <span class="project-card__index">02</span>
+              <h3 class="project-card__title">Project Two</h3>
+              <p class="project-card__desc">Short placeholder description of what it does and the problem it solves.</p>
+              <ul class="project-card__tags">
+                <li>Python</li>
+                <li>API</li>
+              </ul>
+              <a class="project-card__link" href="#">View project →</a>
+            </li>
+            <li class="project-card" data-reveal>
+              <span class="project-card__index">03</span>
+              <h3 class="project-card__title">Project Three</h3>
+              <p class="project-card__desc">Short placeholder description of what it does and the problem it solves.</p>
+              <ul class="project-card__tags">
+                <li>JavaScript</li>
+                <li>Full-stack</li>
+              </ul>
+              <a class="project-card__link" href="#">View project →</a>
+            </li>
+          </ul>
+        </div>
       </section>
 
       <!-- SKILLS -->
       <section id="skills" class="section section--skills" data-section="skills">
-        <div class="section__label">Skills — placeholder</div>
+        <div class="container">
+          <p class="eyebrow" data-reveal>Toolkit</p>
+          <h2 class="section-heading" data-reveal>Skills — placeholder</h2>
+
+          <div class="skills__grid">
+            <div class="skills__group" data-reveal>
+              <h3 class="skills__group-title">Frontend</h3>
+              <ul class="skills__chips">
+                <li>React</li>
+                <li>JavaScript</li>
+                <li>Tailwind CSS</li>
+                <li>HTML &amp; CSS</li>
+              </ul>
+            </div>
+            <div class="skills__group" data-reveal>
+              <h3 class="skills__group-title">Backend</h3>
+              <ul class="skills__chips">
+                <li>Python</li>
+                <li>REST APIs</li>
+                <li>Node.js</li>
+              </ul>
+            </div>
+            <div class="skills__group" data-reveal>
+              <h3 class="skills__group-title">Tooling</h3>
+              <ul class="skills__chips">
+                <li>Git</li>
+                <li>Vite</li>
+                <li>Placeholder</li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- CONTACT -->
       <section id="contact" class="section section--contact" data-section="contact">
-        <div class="section__label">Contact — placeholder</div>
+        <div class="container contact">
+          <p class="eyebrow" data-reveal>Get in touch</p>
+          <h2 class="section-heading" data-reveal>Let's talk — placeholder</h2>
+          <p class="body-text" data-reveal>
+            Placeholder line inviting recruiters/collaborators to reach out.
+          </p>
+          <div class="contact__links" data-reveal>
+            <a class="contact__link" href="mailto:placeholder@example.com">placeholder@example.com</a>
+            <a class="contact__link" href="#">GitHub</a>
+            <a class="contact__link" href="#">LinkedIn</a>
+          </div>
+        </div>
       </section>
     </main>
 

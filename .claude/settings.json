@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm init *)",
+      "Bash(node drive.mjs)",
+      "Bash(node inspect.mjs)",
+      "Bash(pkill -f \"vite.*5190\")",
+      "Bash(claude plugin *)",
+      "Bash(pnpm dlx *)",
+      "Bash(mkdir -p originals)",
+      "Bash(cp profile-left.jpg frontal.jpg arms-crossed.jpg originals/)",
+      "Bash(sed -i 's/5190/5195/g' drive.mjs)",
+      "Bash(pkill -f \"vite.*5195\")",
+      "Bash(sed -i 's/5195/5200/g' drive.mjs)",
+      "Bash(pkill -f \"vite.*5200\")",
+      "Bash(sed -i 's/5200/5210/g' drive.mjs)",
+      "Bash(pkill -f \"vite.*5210\")",
+      "Bash(sed -i 's/5210/5220/g' drive.mjs)",
+      "Bash(pkill -f \"vite.*5220\")"
+    ]
+  }
+}

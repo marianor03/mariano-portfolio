@@ -1,4 +1,4 @@
-/* Layout + component styles. Section internals are placeholders until Phase 2. */
+/* Shared layout: header, container, section scaffolding, reveal utility. */
 
 .site-header {
   position: fixed;
@@ -7,11 +7,32 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-5) var(--gutter);
-  background: linear-gradient(to bottom, var(--color-bg-overlay), transparent);
+  padding: var(--space-4) var(--gutter);
+  background: var(--color-bg-overlay);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Soft faded hairline instead of a hard-edged border: fades out at both
+   ends rather than cutting a flat line across the viewport. */
+.site-header::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--color-border-strong) 25%,
+    var(--color-border-strong) 75%,
+    transparent
+  );
 }
 
 .site-header__mark {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
   font-family: var(--font-display);
   font-size: var(--text-md);
   letter-spacing: var(--tracking-wide);
@@ -19,10 +40,15 @@
 
 .site-header__nav {
   display: flex;
-  gap: var(--space-6);
+  gap: var(--space-5);
 }
 
+/* min-height 2.75rem (44px) meets the minimum touch-target guideline (WCAG 2.5.5 / Apple HIG). */
 .site-header__nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding-inline: var(--space-2);
   font-size: var(--text-sm);
   color: var(--color-text-muted);
   transition: color var(--duration-fast) var(--ease-premium);
@@ -32,24 +58,68 @@
   color: var(--color-text);
 }
 
+.container {
+  max-width: var(--container-max);
+  margin-inline: auto;
+}
+
 .section {
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
   padding: var(--space-section-y) var(--gutter);
-  border-bottom: 1px solid var(--color-border);
 }
 
-.section__label {
-  font-family: var(--font-display);
-  font-style: italic;
-  font-size: var(--text-lg);
-  color: var(--color-text-faint);
-  letter-spacing: var(--tracking-tight);
+/* Soft faded hairline between sections instead of a hard-edged border. */
+.section:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--color-border) 25%,
+    var(--color-border) 75%,
+    transparent
+  );
 }
 
-.section--hero {
-  background: var(--color-bg-elevated);
+.eyebrow {
+  font-size: var(--text-sm);
+  color: var(--color-accent);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  margin-bottom: var(--space-4);
+}
+
+.section-heading {
+  font-size: var(--text-2xl);
+  max-width: 40ch;
+  margin-bottom: var(--space-6);
+}
+
+.body-text {
+  font-size: var(--text-md);
+  color: var(--color-text-muted);
+  max-width: 60ch;
+}
+
+/* Scroll-reveal: JS toggles .is-visible via ScrollTrigger */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity var(--duration-slow) var(--ease-premium),
+    transform var(--duration-slow) var(--ease-premium);
+}
+
+[data-reveal].is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }

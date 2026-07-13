@@ -13,7 +13,12 @@ html {
 
 body {
   margin: 0;
-  background: var(--color-bg);
+  /* Subtle grain over the near-black canvas (inline SVG fractalNoise, alpha
+     scaled to ~5% via feColorMatrix) so the background reads as a textured
+     surface rather than flat digital black. */
+  background-color: var(--color-bg);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
   color: var(--color-text);
   font-family: var(--font-body);
   font-size: var(--text-base);
@@ -65,6 +70,23 @@ ul {
 :focus-visible {
   outline: 1px solid var(--color-accent);
   outline-offset: 3px;
+}
+
+.skip-link {
+  position: absolute;
+  top: -3rem;
+  left: var(--space-4);
+  z-index: var(--z-skip-link);
+  padding: var(--space-3) var(--space-5);
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  transition: top var(--duration-fast) var(--ease-premium);
+}
+
+.skip-link:focus {
+  top: var(--space-4);
 }
 
 @media (prefers-reduced-motion: reduce) {
