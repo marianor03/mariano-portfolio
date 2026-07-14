@@ -22,11 +22,10 @@
     <link rel="stylesheet" href="/src/styles/hero.css" />
     <link rel="stylesheet" href="/src/styles/sections.css" />
     <link rel="stylesheet" href="/src/styles/particles.css" />
+    <link rel="stylesheet" href="/src/styles/takeover.css" />
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to main content</a>
-
-    <div class="particles-bg" data-particles-bg aria-hidden="true"></div>
 
     <main id="main">
       <!-- HERO — pinned three-portrait scroll sequence -->
@@ -222,6 +221,49 @@
       </section>
       </template>
     </main>
+
+    <!--
+      TAKEOVER — end-of-hero blackout scene. The scroll zoom dives between
+      the nameplate's two words into black, then this fixed overlay fades in,
+      plays the gooey loader (ported from uiverse.io — Nawsome) for one 4s
+      cycle, settles on its small center ball with a scroll cue, and the
+      particle field bursts out of that ball. Sequenced by startTakeover()
+      in main.js.
+    -->
+    <div class="takeover" data-takeover aria-hidden="true">
+      <div class="takeover__particles" data-takeover-particles></div>
+
+      <div class="takeover__loader" data-takeover-loader>
+        <div class="blobs">
+          <div class="blob-center"></div>
+          <div class="blob"></div>
+          <div class="blob"></div>
+          <div class="blob"></div>
+          <div class="blob"></div>
+          <div class="blob"></div>
+          <div class="blob"></div>
+        </div>
+        <svg class="takeover__goo-defs" xmlns="http://www.w3.org/2000/svg" version="1.1">
+          <defs>
+            <filter id="goo">
+              <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur"></feGaussianBlur>
+              <feColorMatrix
+                in="blur"
+                mode="matrix"
+                values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7"
+                result="goo"
+              ></feColorMatrix>
+              <feBlend in="SourceGraphic" in2="goo"></feBlend>
+            </filter>
+          </defs>
+        </svg>
+      </div>
+
+      <div class="takeover__cue" data-takeover-cue>
+        <span>Scroll down</span>
+        <i></i>
+      </div>
+    </div>
 
     <script type="module" src="/src/main.js"></script>
   </body>

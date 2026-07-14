@@ -6,7 +6,6 @@ gsap.registerPlugin(ScrollTrigger);
 
 initHero();
 initReveals();
-initParticlesBg();
 
 function initHero() {
   const hero = document.querySelector('[data-hero]');
@@ -17,6 +16,7 @@ function initHero() {
   const beats = gsap.utils.toArray(hero.querySelectorAll('[data-hero-beat]'));
   const loader = hero.querySelector('[data-hero-loader]');
   const scrollCue = hero.querySelector('[data-hero-scroll-cue]');
+  const takeover = document.querySelector('[data-takeover]');
 
   Promise.all(images.map(preloadImage))
     .catch(() => {
@@ -31,7 +31,7 @@ function initHero() {
           onComplete: () => loader.remove(),
         });
       }
-      buildScrollSequence({ hero, frames, images, beats, scrollCue });
+      buildScrollSequence({ hero, frames, images, beats, scrollCue, takeover });
     });
 }
 
@@ -48,7 +48,7 @@ function preloadImage(img) {
   });
 }
 
-function buildScrollSequence({ hero, frames, images, beats, scrollCue }) {
+function buildScrollSequence({ hero, frames, images, beats, scrollCue, takeover }) {
   gsap.set(frames[0], { autoAlpha: 1 });
   gsap.set(frames.slice(1), { autoAlpha: 0 });
   gsap.set(beats[0], { autoAlpha: 1 });
@@ -71,13 +71,20 @@ function buildScrollSequence({ hero, frames, images, beats, scrollCue }) {
     scrollTrigger: {
       trigger: hero,
       start: 'top top',
-      end: '+=250%',
+      end: '+=600%',
       scrub: 0.8,
       pin: true,
       anticipatePin: 1,
       invalidateOnRefresh: true,
       onUpdate: (self) => {
         if (self.progress > 0.02) hideScrollCue();
+        // Scrolling back up past the zoom (progress well below where it
+        // starts at 1/2 = 0.5) means the user has left the takeover scene.
+        // Tear it down rather than leaving its particle field's WebGL
+        // render loop running forever in the background — left alive, it
+        // permanently taxes every frame afterward, including a second pass
+        // back down through this same zoom.
+        if (takeover && self.progress < 0.45) resetTakeover(takeover);
       },
     },
   });
@@ -110,6 +117,193 @@ function buildScrollSequence({ hero, frames, images, beats, scrollCue }) {
       tl.to(beats[i], { autoAlpha: 1, duration: overlap * 1.4, ease: 'power1.inOut' }, segmentStart);
     }
   });
+
+  // Outro: after the third portrait settles (last crossfade ends ~0.83, the
+  // zoom starts at 1.0 — the gap in between is a beat of stillness), the
+  // whole page dives into the gap between the nameplate's two words. The
+  // words fly off-screen leaving only the near-black canvas, the takeover
+  // overlay fades in over it, and startTakeover() runs the loader sequence
+  // once the blackout completes.
+  if (takeover) {
+    // The dive is a scale around the point in the gap between the two words
+    // plus a translate that carries that same point to the viewport center,
+    // so the camera ends up looking straight at the spot between name and
+    // last name rather than zooming toward the bottom-left corner.
+    const zoomShift = { x: 0, y: 0 };
+    const setZoomOrigin = () => {
+      const outline = hero.querySelector('.hero__nameplate-outline');
+      const fill = hero.querySelector('.hero__nameplate-fill');
+      if (!outline || !fill) return;
+      const heroRect = hero.getBoundingClientRect();
+      const outlineRect = outline.getBoundingClientRect();
+      const fillRect = fill.getBoundingClientRect();
+      const originX =
+        (Math.min(outlineRect.left, fillRect.left) + Math.max(outlineRect.right, fillRect.right)) / 2 -
+        heroRect.left;
+      const originY = (outlineRect.bottom + fillRect.top) / 2 - heroRect.top;
+      gsap.set(hero, { transformOrigin: `${originX}px ${originY}px` });
+      zoomShift.x = window.innerWidth / 2 - originX;
+      zoomShift.y = window.innerHeight / 2 - originY;
+    };
+    setZoomOrigin();
+    ScrollTrigger.addEventListener('refreshInit', setZoomOrigin);
+
+    const zoomStart = 1;
+    // Doubled from 0.5s so the scale/pan interpolates across twice the
+    // scroll distance (end below is extended to match) — same motion,
+    // twice as many rendered frames sampled per unit of scroll, so it
+    // reads smoother instead of snapping to scale 10 quickly.
+    const zoomDuration = 1;
+    tl.to(
+      hero,
+      {
+        scale: 10,
+        x: () => zoomShift.x,
+        y: () => zoomShift.y,
+        ease: 'power2.in',
+        duration: zoomDuration,
+      },
+      zoomStart
+    );
+    // Raster-cost relief: the photo panel (masked, blur-filter image
+    // layers) is by far the most expensive content to re-rasterize while
+    // the hero scales up. The dive aims at the lettering, not the photo —
+    // so fade it (and the scrim) out over the first third of the zoom,
+    // leaving only the lightweight text to carry the big scales.
+    const photoPanel = hero.querySelector('.hero__photo-panel');
+    const scrim = hero.querySelector('.hero__scrim');
+    tl.to(
+      [photoPanel, scrim].filter(Boolean),
+      { autoAlpha: 0, duration: zoomDuration * 0.3, ease: 'power1.out' },
+      zoomStart
+    );
+    // Plain opacity, not autoAlpha: autoAlpha also flips a visibility
+    // toggle, which would undo the CSS's deliberate pre-warmed paint state
+    // (see takeover.css) and reintroduce a cold first-paint stall right as
+    // this fades in. Reaches full opacity at 90% of the zoom (not 100%) so
+    // the very largest — most expensive — scales render behind an already
+    // opaque overlay.
+    tl.to(
+      takeover,
+      { opacity: 1, ease: 'power1.inOut', duration: zoomDuration * 0.35 },
+      zoomStart + zoomDuration * 0.55
+    );
+    // Once the overlay is opaque, stop rendering the giant scaled hero
+    // entirely (scrub-reversible: scrolling back re-runs this set in
+    // reverse and restores it).
+    tl.set(hero, { autoAlpha: 0 }, zoomStart + zoomDuration * 0.92);
+    // Slightly before the timeline's very end so the scrub reliably crosses it.
+    tl.call(() => startTakeover(takeover), [], zoomStart + zoomDuration - 0.02);
+  }
+}
+
+let takeoverStarted = false;
+let takeoverSeq = null;
+let particleField = null;
+
+function startTakeover(takeover) {
+  if (takeoverStarted) return;
+  takeoverStarted = true;
+
+  const loader = takeover.querySelector('[data-takeover-loader]');
+  const cue = takeover.querySelector('[data-takeover-cue]');
+  const particlesContainer = takeover.querySelector('[data-takeover-particles]');
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Everything for this run lives on one timeline so resetTakeover() can
+  // stop all of it atomically with a single kill() — including the burst,
+  // which used to fire as untracked standalone tweens that would keep
+  // running (and, worse, leave the particle field's render loop alive)
+  // even after the user scrolled back out of the scene.
+  const seq = gsap.timeline();
+  takeoverSeq = seq;
+  // Plain opacity — see the comment on the outer takeover fade above; same
+  // reasoning applies to the loader's own .blobs SVG-filter layer.
+  seq.to(loader, { opacity: 1, duration: 0.7, ease: 'power1.inOut' });
+
+  if (reduceMotion) {
+    // GSAP tweens and the loader's CSS run aren't covered by the global
+    // reduced-motion CSS block, so branch explicitly: skip the loop run and
+    // the particle burst, land straight on the static ball + cue.
+    seq.call(() => takeover.classList.add('is-settled'));
+    seq.to(cue, { autoAlpha: 1, duration: 0.6, ease: 'power1.out' }, '+=0.3');
+    return;
+  }
+
+  seq.call(() => takeover.classList.add('is-running'));
+  // Build the WebGL context and compile shaders now, during the idle loop,
+  // rather than at the exact instant of the burst below — that construction
+  // is a genuine synchronous stall, and it's far less noticeable while the
+  // blobs are already looping than during the settle-and-burst beat.
+  seq.call(() => prewarmParticles(takeover), [], '+=0.1');
+  // The loader is shown for exactly 5s total, and must complete exactly 3
+  // full loops in that window — so each cycle runs at 5/3s (kept in sync
+  // with --loop in takeover.css). Every cycle ends with everything at scale
+  // 0, so settling right at the 5s boundary lets the static ball grow back
+  // in (takeover-ball-in) without a visible jump.
+  const runDuration = 5;
+  seq.call(() => takeover.classList.add('is-settled'), [], `+=${runDuration}`);
+
+  // Burst the particles out of the ball just as it finishes growing in,
+  // and take the ball with them the instant the field erupts. Everything
+  // hangs off the 'burst' label (positions relative to the burst's START —
+  // '+=' here would chain off the 1.8s burst tween's END, which is exactly
+  // the mistake that previously left the ball lingering ~2s). Added
+  // straight onto seq (not spawned as independent tweens) so killing seq
+  // also kills these.
+  const burst = { value: 0 };
+  seq.addLabel('burst', '+=0.55');
+  seq.call(() => {
+    if (!particleField) prewarmParticles(takeover);
+  }, [], 'burst');
+  seq.to(particlesContainer, { opacity: 1, duration: 0.5, ease: 'power1.out' }, 'burst');
+  seq.to(
+    burst,
+    {
+      value: 10,
+      duration: 1.8,
+      ease: 'expo.out',
+      onUpdate: () => particleField && particleField.setSpread(burst.value),
+    },
+    'burst'
+  );
+  seq.to(loader, { opacity: 0, duration: 0.35, ease: 'power1.out' }, 'burst+=0.1');
+  seq.to(cue, { autoAlpha: 1, duration: 0.6, ease: 'power1.out' }, 'burst+=0.9');
+}
+
+function prewarmParticles(takeover) {
+  const container = takeover.querySelector('[data-takeover-particles]');
+  if (!container || particleField) return;
+  // particleCount raised 125% from the OGL default of 120 (120 * 2.25 = 270).
+  particleField = initParticles(container, { particleSpread: 10, particleCount: 270 });
+  // Collapsed to a point — real hiding is the container's own opacity (see
+  // startTakeover's burst step / particles.css); this just keeps the field
+  // ready to burst outward rather than already fully spread.
+  particleField.setSpread(0);
+}
+
+function resetTakeover(takeover) {
+  if (!takeoverStarted) return;
+  takeoverStarted = false;
+
+  if (takeoverSeq) {
+    takeoverSeq.kill();
+    takeoverSeq = null;
+  }
+
+  takeover.classList.remove('is-running', 'is-settled');
+  gsap.set(takeover.querySelector('[data-takeover-loader]'), { opacity: 0 });
+  gsap.set(takeover.querySelector('[data-takeover-cue]'), { autoAlpha: 0 });
+  const particlesContainer = takeover.querySelector('[data-takeover-particles]');
+  if (particlesContainer) gsap.set(particlesContainer, { opacity: 0 });
+
+  // The real fix: without this, the WebGL render loop just keeps running
+  // in the background forever, permanently taxing every frame afterward —
+  // that leftover cost is what made a second pass through the zoom stutter.
+  if (particleField) {
+    particleField.destroy();
+    particleField = null;
+  }
 }
 
 function initReveals() {
@@ -124,16 +318,4 @@ function initReveals() {
       once: true,
     });
   });
-}
-
-function initParticlesBg() {
-  const container = document.querySelector('[data-particles-bg]');
-  if (!container) return;
-
-  // A continuously animating full-page WebGL canvas is exactly the kind of
-  // motion prefers-reduced-motion asks sites to skip — same reasoning as
-  // the hero's Ken Burns drift, so it doesn't mount at all in that case.
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-  initParticles(container);
 }

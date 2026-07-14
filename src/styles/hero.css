@@ -4,13 +4,19 @@
    hard cutoff. The bold nameplate + crossfading meta line stay anchored in
    the bottom-left corner. Frames dissolve via a blur+opacity transition (no
    zoom/pan) as main.js scrubs a GSAP timeline against scroll (see
-   initHero()). */
+   initHero()). After the third portrait, the same timeline scales the whole
+   section up from the gap between the nameplate's words and hands off to
+   the takeover scene (takeover.css). */
 
 .hero {
   position: relative;
   height: 100vh;
   min-height: 34rem;
   overflow: hidden;
+  /* The outro zoom scales this whole section; declaring it up front lets
+     the compositor keep a promoted layer instead of re-deciding (and
+     re-rasterizing from scratch) when the scrubbed scale tween kicks in. */
+  will-change: transform;
 }
 
 .hero__photo-panel {

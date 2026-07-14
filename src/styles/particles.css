@@ -1,15 +1,21 @@
-/* Ambient particle field mounted once, fixed behind the entire scrolling
-   page (not per-section) — cheaper than multiple WebGL contexts and reads
-   as one continuous canvas rather than resetting at each section. */
+/* Particle field layer inside the takeover scene. The WebGL context/shaders
+   are actually built earlier, during the loader's idle loop (main.js
+   prewarmParticles()), to avoid a stall right at the burst — but the
+   field's own shader always applies a small per-particle jitter regardless
+   of spread, so it can't be masked by spread alone. Opacity keeps it fully
+   hidden until the real reveal, which fades this in alongside the spread
+   tween (main.js burstParticles()). Sits below .takeover__loader (painted
+   earlier in DOM order) so the ball stays on top. */
 
-.particles-bg {
-  position: fixed;
+.takeover__particles {
+  position: absolute;
   inset: 0;
-  z-index: var(--z-behind);
   pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
 }
 
-.particles-bg canvas {
+.takeover__particles canvas {
   display: block;
   width: 100%;
   height: 100%;

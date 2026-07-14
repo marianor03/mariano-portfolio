@@ -205,14 +205,22 @@ export function initParticles(
   };
   animationFrameId = requestAnimationFrame(update);
 
-  return function destroy() {
-    window.removeEventListener('resize', resize);
-    if (moveParticlesOnHover) {
-      window.removeEventListener('mousemove', handleMouseMove);
-    }
-    cancelAnimationFrame(animationFrameId);
-    if (container.contains(gl.canvas)) {
-      container.removeChild(gl.canvas);
-    }
+  return {
+    // Live control over how far particles sit from the origin — animating
+    // this from 0 back up to particleSpread produces the burst-from-center
+    // reveal (the vertex shader multiplies each position by uSpread).
+    setSpread(value) {
+      program.uniforms.uSpread.value = value;
+    },
+    destroy() {
+      window.removeEventListener('resize', resize);
+      if (moveParticlesOnHover) {
+        window.removeEventListener('mousemove', handleMouseMove);
+      }
+      cancelAnimationFrame(animationFrameId);
+      if (container.contains(gl.canvas)) {
+        container.removeChild(gl.canvas);
+      }
+    },
   };
 }

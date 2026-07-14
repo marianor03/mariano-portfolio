@@ -37,7 +37,23 @@
       "Bash(node sanity.mjs)",
       "PowerShell(Get-Process | Where-Object { $_.ProcessName -match 'chrome|headless_shell' } | Measure-Object | Select-Object -ExpandProperty Count)",
       "Bash(node screenshot-blur.mjs)",
-      "Bash(pkill -f \"vite.*5260\")"
+      "Bash(pkill -f \"vite.*5260\")",
+      "WebFetch(domain:uiverse.io)",
+      "Bash(node takeover-check.mjs)",
+      "Bash(pkill -f \"vite.*5261\")",
+      "Bash(node takeover-fix-check.mjs)",
+      "Bash(node zoom-verify.mjs)",
+      "Bash(node zoom-double-check.mjs)",
+      "Bash(node prewarm-check.mjs)",
+      "Bash(node prewarm-visual-check.mjs)",
+      "Bash(node loop-count-check.mjs)",
+      "Bash(node zoom-stutter-check.mjs)",
+      "Bash(node zoom-second-pass-check.mjs)",
+      "Bash(node zoom-native-scroll-check.mjs)",
+      "Bash(node reset-visual-check.mjs)",
+      "Bash(pkill -f \"vite.*5273\")",
+      "Bash(node zoom-region-profile.mjs)",
+      "Bash(node both-fixes-check.mjs)"
     ]
   }
 }

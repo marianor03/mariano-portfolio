@@ -85,5 +85,6 @@
   --z-raised: 1;
   --z-overlay: 3;
   --z-loader: 5;
+  --z-takeover: 50;
   --z-skip-link: 100;
 }
