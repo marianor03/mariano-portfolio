@@ -16,7 +16,28 @@
       "Bash(sed -i 's/5200/5210/g' drive.mjs)",
       "Bash(pkill -f \"vite.*5210\")",
       "Bash(sed -i 's/5210/5220/g' drive.mjs)",
-      "Bash(pkill -f \"vite.*5220\")"
+      "Bash(pkill -f \"vite.*5220\")",
+      "WebFetch(domain:reactbits.dev)",
+      "Bash(curl -s \"https://api.github.com/search/repositories?q=reactbits+in:name\")",
+      "WebFetch(domain:github.com)",
+      "Bash(pkill -f \"vite.*52\")",
+      "Bash(sed -i 's/5220/5230/g' drive.mjs)",
+      "Bash(pkill -f \"vite.*5230\")",
+      "Bash(rm -rf dist)",
+      "Bash(pnpm add *)",
+      "Bash(sed -i 's/5230/5240/g' drive.mjs)",
+      "Bash(pkill -f \"vite.*5240\")",
+      "Bash(pkill -f \"vite.*5250\")",
+      "Bash(sed -i 's/5240/5260/g' drive.mjs)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://localhost:5260/mariano-portfolio/)",
+      "Bash(curl -s http://localhost:5260/mariano-portfolio/src/styles/tokens.css -o /dev/null -w \"tokens.css: HTTP %{http_code}\\\\n\")",
+      "Bash(tasklist)",
+      "Bash(pkill -9 -f \"chromium\")",
+      "Bash(pkill -9 -f \"chrome.exe\")",
+      "Bash(node sanity.mjs)",
+      "PowerShell(Get-Process | Where-Object { $_.ProcessName -match 'chrome|headless_shell' } | Measure-Object | Select-Object -ExpandProperty Count)",
+      "Bash(node screenshot-blur.mjs)",
+      "Bash(pkill -f \"vite.*5260\")"
     ]
   }
 }

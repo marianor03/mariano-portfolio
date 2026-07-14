@@ -1,0 +1,16 @@
+/* Ambient particle field mounted once, fixed behind the entire scrolling
+   page (not per-section) — cheaper than multiple WebGL contexts and reads
+   as one continuous canvas rather than resetting at each section. */
+
+.particles-bg {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-behind);
+  pointer-events: none;
+}
+
+.particles-bg canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

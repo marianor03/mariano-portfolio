@@ -1,10 +1,12 @@
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { initParticles } from './particles.js';
 
 gsap.registerPlugin(ScrollTrigger);
 
 initHero();
 initReveals();
+initParticlesBg();
 
 function initHero() {
   const hero = document.querySelector('[data-hero]');
@@ -59,67 +61,55 @@ function buildScrollSequence({ hero, frames, images, beats, scrollCue }) {
     gsap.to(scrollCue, { opacity: 0, duration: 0.4, ease: 'power1.out' });
   };
 
-  // GSAP tweens are driven by JS (inline styles via rAF), not CSS
-  // transitions/animations, so the prefers-reduced-motion block in base.css
-  // has no effect on them. Check it explicitly and skip the decorative
-  // scale/parallax drift (keeping only the crossfade, which is the actual
-  // content transition, not decoration).
-  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  gsap.set(images, { filter: 'blur(0px)' });
 
-  // The photo panel is a full-height (desktop) / 45vh (mobile) clipped
-  // rectangle, so there's more room for a Ken Burns drift than the earlier
-  // small contained square allowed, without it looking like it's escaping.
-  ScrollTrigger.matchMedia({
-    '(min-width: 701px)': () => setupTimeline({ scaleAmount: 1.08, travel: 22 }),
-    '(max-width: 700px)': () => setupTimeline({ scaleAmount: 1.04, travel: 10 }),
+  const segment = 1 / frames.length;
+  const overlap = segment * 0.35;
+  const maxBlur = 22;
+
+  const tl = gsap.timeline({
+    scrollTrigger: {
+      trigger: hero,
+      start: 'top top',
+      end: '+=250%',
+      scrub: 0.8,
+      pin: true,
+      anticipatePin: 1,
+      invalidateOnRefresh: true,
+      onUpdate: (self) => {
+        if (self.progress > 0.02) hideScrollCue();
+      },
+    },
   });
 
-  function setupTimeline({ scaleAmount, travel }) {
-    const segment = 1 / frames.length;
-    const overlap = segment * 0.35;
+  frames.forEach((frame, i) => {
+    const segmentStart = i * segment;
 
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: hero,
-        start: 'top top',
-        end: '+=250%',
-        scrub: 0.8,
-        pin: true,
-        anticipatePin: 1,
-        invalidateOnRefresh: true,
-        onUpdate: (self) => {
-          if (self.progress > 0.02) hideScrollCue();
-        },
-      },
-    });
+    if (i > 0) {
+      const crossfadeStart = segmentStart - overlap;
+      const crossfadeDuration = overlap * 2;
 
-    frames.forEach((frame, i) => {
-      const segmentStart = i * segment;
+      // Blur dissolve instead of a zoom/pan drift: the outgoing photo
+      // defocuses as it fades out, the incoming one sharpens into focus.
+      tl.fromTo(
+        images[i - 1],
+        { filter: 'blur(0px)' },
+        { filter: `blur(${maxBlur}px)`, ease: 'power1.inOut', duration: crossfadeDuration },
+        crossfadeStart
+      );
+      tl.fromTo(
+        images[i],
+        { filter: `blur(${maxBlur}px)` },
+        { filter: 'blur(0px)', ease: 'power1.inOut', duration: crossfadeDuration },
+        crossfadeStart
+      );
 
-      // Subtle continuous parallax/scale while this frame is on screen.
-      if (!prefersReducedMotion) {
-        tl.fromTo(
-          images[i],
-          { scale: 1, y: 0 },
-          { scale: scaleAmount, y: -travel, ease: 'none', duration: segment },
-          segmentStart
-        );
-      }
-
-      if (i > 0) {
-        const crossfadeStart = segmentStart - overlap;
-        tl.to(frames[i - 1], { autoAlpha: 0, duration: overlap * 2, ease: 'power1.inOut' }, crossfadeStart);
-        tl.to(frame, { autoAlpha: 1, duration: overlap * 2, ease: 'power1.inOut' }, crossfadeStart);
-        tl.to(beats[i - 1], { autoAlpha: 0, duration: overlap * 1.4, ease: 'power1.inOut' }, crossfadeStart);
-        tl.to(beats[i], { autoAlpha: 1, duration: overlap * 1.4, ease: 'power1.inOut' }, segmentStart);
-      }
-    });
-
-    return () => {
-      tl.scrollTrigger?.kill();
-      tl.kill();
-    };
-  }
+      tl.to(frames[i - 1], { autoAlpha: 0, duration: crossfadeDuration, ease: 'power1.inOut' }, crossfadeStart);
+      tl.to(frame, { autoAlpha: 1, duration: crossfadeDuration, ease: 'power1.inOut' }, crossfadeStart);
+      tl.to(beats[i - 1], { autoAlpha: 0, duration: overlap * 1.4, ease: 'power1.inOut' }, crossfadeStart);
+      tl.to(beats[i], { autoAlpha: 1, duration: overlap * 1.4, ease: 'power1.inOut' }, segmentStart);
+    }
+  });
 }
 
 function initReveals() {
@@ -134,4 +124,16 @@ function initReveals() {
       once: true,
     });
   });
+}
+
+function initParticlesBg() {
+  const container = document.querySelector('[data-particles-bg]');
+  if (!container) return;
+
+  // A continuously animating full-page WebGL canvas is exactly the kind of
+  // motion prefers-reduced-motion asks sites to skip — same reasoning as
+  // the hero's Ken Burns drift, so it doesn't mount at all in that case.
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  initParticles(container);
 }

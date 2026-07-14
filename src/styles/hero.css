@@ -2,8 +2,9 @@
    (top-anchored full-width strip on mobile), fading into the page's own
    background color at its inner edge via a mask gradient — no frame, no
    hard cutoff. The bold nameplate + crossfading meta line stay anchored in
-   the bottom-left corner. Frames crossfade + subtly scale/parallax as
-   main.js scrubs a GSAP timeline against scroll (see initHero()). */
+   the bottom-left corner. Frames dissolve via a blur+opacity transition (no
+   zoom/pan) as main.js scrubs a GSAP timeline against scroll (see
+   initHero()). */
 
 .hero {
   position: relative;
@@ -55,7 +56,7 @@
   height: 100%;
   object-fit: cover;
   object-position: 50% 22%;
-  will-change: transform;
+  will-change: filter;
 }
 
 /* Legibility safety net behind the corner text. The photo panel's own mask

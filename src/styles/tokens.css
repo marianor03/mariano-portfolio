@@ -14,7 +14,6 @@
   /* Color: surfaces */
   --color-bg: #060709;
   --color-bg-elevated: #0d0f12;
-  --color-bg-overlay: rgba(6, 7, 9, 0.72);
 
   /* Color: text */
   --color-text: #f3f1ec;
@@ -82,9 +81,9 @@
   --duration-slow: 0.8s;
 
   /* Z-index scale */
+  --z-behind: -1;
   --z-raised: 1;
   --z-overlay: 3;
   --z-loader: 5;
-  --z-header: 50;
   --z-skip-link: 100;
 }
