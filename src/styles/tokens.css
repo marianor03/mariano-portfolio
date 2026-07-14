@@ -24,6 +24,12 @@
   --color-accent: #cff7ef;
   --color-accent-strong: #9fe8d9;
 
+  /* Color: sun (takeover space scene) — warm orange gradient stops for the
+     ignited loader ball and its glow */
+  --color-sun-core: #ffd98a;
+  --color-sun: #f5a34a;
+  --color-sun-deep: #c8641c;
+
   /* Color: hairlines */
   --color-border: rgba(245, 244, 240, 0.1);
   --color-border-strong: rgba(245, 244, 240, 0.18);

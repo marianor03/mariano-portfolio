@@ -1,0 +1,82 @@
+/* Planet orbit for the takeover space scene — vanilla port of Dominik
+   Koch's OrbitImages component (original: React + motion/react). The
+   layout mechanism is unchanged from the original: a fixed 1400x1400
+   design space, scaled to the container by orbit.js (the original's
+   `responsive` mode), a rotation wrapper for the orbit's tilt, and
+   absolutely-positioned items placed by CSS Motion Path (offset-path).
+   orbit.js generates the ellipse path and drives offset-distance. */
+
+.takeover__orbit {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.orbit-scaling {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1400px;
+  height: 1400px;
+  transform: translate(-50%, -50%);
+  transform-origin: center center;
+}
+
+.orbit-rotation {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-8deg);
+  transform-origin: center center;
+}
+
+.orbit-path-svg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.orbit-path-svg path {
+  stroke: rgba(243, 241, 236, 0.08);
+  stroke-width: 1.5;
+}
+
+.orbit-item {
+  position: absolute;
+  will-change: transform;
+  user-select: none;
+}
+
+/* Planets: shaded spheres via an off-center radial highlight, sized in
+   design-space px (the scaling container shrinks them with everything
+   else). Palette pulls from the site accents plus warm hues to sit with
+   the orange sun. */
+.orbit-planet {
+  border-radius: 50%;
+  box-shadow: inset -5px -6px 10px rgba(0, 0, 0, 0.4);
+}
+
+.orbit-planet--mint {
+  width: 34px;
+  height: 34px;
+  background: radial-gradient(circle at 32% 30%, #e9fcf6 0%, var(--color-accent-strong) 55%, #4d8d7f 100%);
+}
+
+.orbit-planet--sand {
+  width: 48px;
+  height: 48px;
+  background: radial-gradient(circle at 32% 30%, #f4e3bd 0%, #e3c07d 55%, #8f7340 100%);
+}
+
+.orbit-planet--slate {
+  width: 24px;
+  height: 24px;
+  background: radial-gradient(circle at 32% 30%, #c8d6ea 0%, #93a7c4 55%, #45566e 100%);
+}
+
+.orbit-planet--rust {
+  width: 40px;
+  height: 40px;
+  background: radial-gradient(circle at 32% 30%, #e8a678 0%, #c97b4a 55%, #6e3a1c 100%);
+}

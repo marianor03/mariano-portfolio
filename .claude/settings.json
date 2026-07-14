@@ -53,7 +53,16 @@
       "Bash(node reset-visual-check.mjs)",
       "Bash(pkill -f \"vite.*5273\")",
       "Bash(node zoom-region-profile.mjs)",
-      "Bash(node both-fixes-check.mjs)"
+      "Bash(node both-fixes-check.mjs)",
+      "Bash(node sun-orbit-check.mjs)",
+      "Bash(node cue-activity-check.mjs)",
+      "Bash(node cue-activity-check2.mjs)",
+      "Bash(node cue-activity-check3.mjs)",
+      "Bash(node hero-cue-check.mjs)",
+      "Bash(node hero-cue-position-timing-check.mjs)",
+      "Bash(node cue-during-loader-check.mjs)",
+      "Bash(node cue-guard-verify.mjs)",
+      "Bash(rm -rf \"d:/Repositories/mariano-portfolio/dist\")"
     ]
   }
 }

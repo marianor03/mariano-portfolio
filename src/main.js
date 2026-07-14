@@ -1,11 +1,13 @@
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { initParticles } from './particles.js';
+import { initOrbit } from './orbit.js';
 
 gsap.registerPlugin(ScrollTrigger);
 
 initHero();
 initReveals();
+initScrollCueActivity();
 
 function initHero() {
   const hero = document.querySelector('[data-hero]');
@@ -54,12 +56,10 @@ function buildScrollSequence({ hero, frames, images, beats, scrollCue, takeover 
   gsap.set(beats[0], { autoAlpha: 1 });
   gsap.set(beats.slice(1), { autoAlpha: 0 });
 
-  let cueHidden = false;
-  const hideScrollCue = () => {
-    if (cueHidden || !scrollCue) return;
-    cueHidden = true;
-    gsap.to(scrollCue, { opacity: 0, duration: 0.4, ease: 'power1.out' });
-  };
+  // Same idle/active fade the takeover's "Scroll down" cue uses — ready
+  // immediately since the hero (and this hint) is visible from page load.
+  const heroCue = scrollCue ? createIdleCue(scrollCue) : null;
+  if (heroCue) heroCue.setReady(true);
 
   gsap.set(images, { filter: 'blur(0px)' });
 
@@ -77,7 +77,6 @@ function buildScrollSequence({ hero, frames, images, beats, scrollCue, takeover 
       anticipatePin: 1,
       invalidateOnRefresh: true,
       onUpdate: (self) => {
-        if (self.progress > 0.02) hideScrollCue();
         // Scrolling back up past the zoom (progress well below where it
         // starts at 1/2 = 0.5) means the user has left the takeover scene.
         // Tear it down rather than leaving its particle field's WebGL
@@ -200,6 +199,7 @@ function buildScrollSequence({ hero, frames, images, beats, scrollCue, takeover 
 let takeoverStarted = false;
 let takeoverSeq = null;
 let particleField = null;
+let takeoverCue = null;
 
 function startTakeover(takeover) {
   if (takeoverStarted) return;
@@ -208,7 +208,9 @@ function startTakeover(takeover) {
   const loader = takeover.querySelector('[data-takeover-loader]');
   const cue = takeover.querySelector('[data-takeover-cue]');
   const particlesContainer = takeover.querySelector('[data-takeover-particles]');
+  const orbit = takeover.querySelector('[data-takeover-orbit]');
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!takeoverCue) takeoverCue = createIdleCue(cue);
 
   // Everything for this run lives on one timeline so resetTakeover() can
   // stop all of it atomically with a single kill() — including the burst,
@@ -224,9 +226,16 @@ function startTakeover(takeover) {
   if (reduceMotion) {
     // GSAP tweens and the loader's CSS run aren't covered by the global
     // reduced-motion CSS block, so branch explicitly: skip the loop run and
-    // the particle burst, land straight on the static ball + cue.
-    seq.call(() => takeover.classList.add('is-settled'));
-    seq.to(cue, { autoAlpha: 1, duration: 0.6, ease: 'power1.out' }, '+=0.3');
+    // the particle burst, land straight on the ignited sun with the planets
+    // parked in place (paused orbit) + cue.
+    seq.call(() => {
+      takeover.classList.add('is-settled', 'is-sun');
+      startOrbit(takeover, { paused: true });
+    });
+    if (orbit) seq.to(orbit, { opacity: 1, duration: 0.6, ease: 'power1.out' }, '+=0.3');
+    seq.call(() => {
+      if (takeover.classList.contains('is-sun')) takeoverCue.setReady(true);
+    }, [], '<');
     return;
   }
 
@@ -244,13 +253,14 @@ function startTakeover(takeover) {
   const runDuration = 5;
   seq.call(() => takeover.classList.add('is-settled'), [], `+=${runDuration}`);
 
-  // Burst the particles out of the ball just as it finishes growing in,
-  // and take the ball with them the instant the field erupts. Everything
-  // hangs off the 'burst' label (positions relative to the burst's START —
-  // '+=' here would chain off the 1.8s burst tween's END, which is exactly
-  // the mistake that previously left the ball lingering ~2s). Added
-  // straight onto seq (not spawned as independent tweens) so killing seq
-  // also kills these.
+  // Burst the particles out of the ball just as it finishes growing in.
+  // The ball STAYS this time — instead of fading out it ignites: .is-sun
+  // fades in the orange gradient surface + glow (space scene; the ball is
+  // now the sun) while the planets' orbit starts and fades in around it.
+  // Everything hangs off the 'burst' label (positions relative to the
+  // burst's START, not the 1.8s burst tween's end). Added straight onto
+  // seq (not spawned as independent tweens) so killing seq also kills
+  // these.
   const burst = { value: 0 };
   seq.addLabel('burst', '+=0.55');
   seq.call(() => {
@@ -267,8 +277,73 @@ function startTakeover(takeover) {
     },
     'burst'
   );
-  seq.to(loader, { opacity: 0, duration: 0.35, ease: 'power1.out' }, 'burst+=0.1');
-  seq.to(cue, { autoAlpha: 1, duration: 0.6, ease: 'power1.out' }, 'burst+=0.9');
+  seq.call(() => takeover.classList.add('is-sun'), [], 'burst+=0.15');
+  seq.call(() => startOrbit(takeover), [], 'burst+=0.3');
+  if (orbit) seq.to(orbit, { opacity: 1, duration: 1.4, ease: 'power1.inOut' }, 'burst+=0.6');
+  // Gated on 'is-sun' explicitly (not just this position in the timeline)
+  // so the cue structurally cannot appear during the loader's fade-in or
+  // its 5s loop — it stays not-ready no matter how the burst timing above
+  // gets tuned later.
+  seq.call(() => {
+    if (takeover.classList.contains('is-sun')) takeoverCue.setReady(true);
+  }, [], 'burst+=1.1');
+}
+
+// Shared by every "scroll hint" on the site (the hero's "Scroll" cue and
+// the takeover's "Scroll down" cue): fades in while the user is idle, and
+// fades out the moment they scroll. One global listener drives every
+// registered cue. 'wheel'/'touchmove' catch attempted scrolling even at
+// the very bottom of the page (where 'scroll' itself won't fire since
+// scrollY can't change further), so trying to scroll past the end still
+// hides a cue.
+const idleCues = [];
+const CUE_IDLE_DELAY = 220;
+
+function initScrollCueActivity() {
+  const onActivity = () => idleCues.forEach((cue) => cue.onActivity());
+  window.addEventListener('wheel', onActivity, { passive: true });
+  window.addEventListener('touchmove', onActivity, { passive: true });
+  window.addEventListener('scroll', onActivity, { passive: true });
+}
+
+// Each cue tracks its own ready/visible state so one can be mid-fade while
+// another hasn't been revealed yet (e.g. the takeover's cue stays not-ready
+// until the sun ignites, regardless of what the hero's cue is doing).
+function createIdleCue(el) {
+  let ready = false;
+  let visible = false;
+  let idleTimer = null;
+
+  const showIfReady = () => {
+    if (!ready || visible) return;
+    visible = true;
+    gsap.to(el, { autoAlpha: 1, duration: 0.5, ease: 'power1.out' });
+  };
+  const hide = () => {
+    if (!visible) return;
+    visible = false;
+    gsap.to(el, { autoAlpha: 0, duration: 0.25, ease: 'power1.out' });
+  };
+
+  const controller = {
+    onActivity() {
+      hide();
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(showIfReady, CUE_IDLE_DELAY);
+    },
+    setReady(value) {
+      ready = value;
+      if (value) {
+        showIfReady();
+      } else {
+        visible = false;
+        clearTimeout(idleTimer);
+        gsap.set(el, { autoAlpha: 0 });
+      }
+    },
+  };
+  idleCues.push(controller);
+  return controller;
 }
 
 function prewarmParticles(takeover) {
@@ -282,6 +357,14 @@ function prewarmParticles(takeover) {
   particleField.setSpread(0);
 }
 
+let orbitSystem = null;
+
+function startOrbit(takeover, options) {
+  const container = takeover.querySelector('[data-takeover-orbit]');
+  if (!container || orbitSystem) return;
+  orbitSystem = initOrbit(container, options);
+}
+
 function resetTakeover(takeover) {
   if (!takeoverStarted) return;
   takeoverStarted = false;
@@ -291,11 +374,13 @@ function resetTakeover(takeover) {
     takeoverSeq = null;
   }
 
-  takeover.classList.remove('is-running', 'is-settled');
+  takeover.classList.remove('is-running', 'is-settled', 'is-sun');
   gsap.set(takeover.querySelector('[data-takeover-loader]'), { opacity: 0 });
-  gsap.set(takeover.querySelector('[data-takeover-cue]'), { autoAlpha: 0 });
+  if (takeoverCue) takeoverCue.setReady(false);
   const particlesContainer = takeover.querySelector('[data-takeover-particles]');
   if (particlesContainer) gsap.set(particlesContainer, { opacity: 0 });
+  const orbit = takeover.querySelector('[data-takeover-orbit]');
+  if (orbit) gsap.set(orbit, { opacity: 0 });
 
   // The real fix: without this, the WebGL render loop just keeps running
   // in the background forever, permanently taxing every frame afterward —
@@ -303,6 +388,11 @@ function resetTakeover(takeover) {
   if (particleField) {
     particleField.destroy();
     particleField = null;
+  }
+  // Same reasoning for the orbit's endless driver tween.
+  if (orbitSystem) {
+    orbitSystem.destroy();
+    orbitSystem = null;
   }
 }
 

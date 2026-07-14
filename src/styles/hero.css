@@ -164,10 +164,16 @@
   vertical-align: middle;
 }
 
+/* Bottom-center, matching the takeover's .takeover__cue — same position,
+   same idle/active fade (see main.js createIdleCue). No CSS opacity
+   transition here: GSAP drives autoAlpha directly, and a CSS transition
+   on the same property would compound with it, distorting the fade away
+   from the takeover cue's timing rather than matching it. */
 .hero__scroll-cue {
   position: absolute;
-  right: var(--gutter);
+  left: 50%;
   bottom: var(--space-6);
+  transform: translateX(-50%);
   z-index: var(--z-overlay);
   display: flex;
   flex-direction: column;
@@ -177,7 +183,6 @@
   font-size: var(--text-xs);
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
-  transition: opacity var(--duration-base) var(--ease-premium);
 }
 
 .hero__scroll-cue i {

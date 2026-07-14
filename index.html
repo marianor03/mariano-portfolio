@@ -23,6 +23,7 @@
     <link rel="stylesheet" href="/src/styles/sections.css" />
     <link rel="stylesheet" href="/src/styles/particles.css" />
     <link rel="stylesheet" href="/src/styles/takeover.css" />
+    <link rel="stylesheet" href="/src/styles/orbit.css" />
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to main content</a>
@@ -232,6 +233,28 @@
     -->
     <div class="takeover" data-takeover aria-hidden="true">
       <div class="takeover__particles" data-takeover-particles></div>
+
+      <!-- Ambient sun glow — outside .blobs so the goo filter's
+           overflow:hidden can't clip it. Revealed by .is-sun. -->
+      <div class="takeover__sunglow" aria-hidden="true"></div>
+
+      <!-- Planet orbit (vanilla port of Dominik Koch's OrbitImages —
+           CSS Motion Path driven by orbit.js). Painted before the loader
+           so planets pass behind the sun, matching the original component's
+           center-content-on-top layering. -->
+      <div class="takeover__orbit" data-takeover-orbit>
+        <div class="orbit-scaling" data-orbit-scaling>
+          <div class="orbit-rotation">
+            <svg class="orbit-path-svg" viewBox="0 0 1400 1400" aria-hidden="true">
+              <path data-orbit-path fill="none" />
+            </svg>
+            <div class="orbit-item orbit-planet orbit-planet--mint"></div>
+            <div class="orbit-item orbit-planet orbit-planet--sand"></div>
+            <div class="orbit-item orbit-planet orbit-planet--slate"></div>
+            <div class="orbit-item orbit-planet orbit-planet--rust"></div>
+          </div>
+        </div>
+      </div>
 
       <div class="takeover__loader" data-takeover-loader>
         <div class="blobs">
