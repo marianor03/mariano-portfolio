@@ -92,5 +92,7 @@
   --z-overlay: 3;
   --z-loader: 5;
   --z-takeover: 50;
+  --z-planet-veil: 55;
+  --z-planet: 60;
   --z-skip-link: 100;
 }

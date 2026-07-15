@@ -66,6 +66,15 @@ export function initOrbit(
   }
 
   return {
+    // Used while a planet page is open: the galaxy is hidden behind the
+    // page overlay, so the driver idles instead of burning frames, then
+    // picks up from the same offsets on the way back.
+    pause() {
+      if (driver) driver.pause();
+    },
+    resume() {
+      if (driver) driver.resume();
+    },
     destroy() {
       if (driver) driver.kill();
       observer.disconnect();

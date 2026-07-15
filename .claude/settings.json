@@ -62,7 +62,18 @@
       "Bash(node hero-cue-position-timing-check.mjs)",
       "Bash(node cue-during-loader-check.mjs)",
       "Bash(node cue-guard-verify.mjs)",
-      "Bash(rm -rf \"d:/Repositories/mariano-portfolio/dist\")"
+      "Bash(rm -rf \"d:/Repositories/mariano-portfolio/dist\")",
+      "Bash(node planet-pages-check.mjs)",
+      "Bash(node orbit-hover-freeze-check.mjs)",
+      "Bash(node menu-cue-check.mjs)",
+      "Bash(cd \"d:/Repositories/mariano-portfolio\" && mkdir -p public/images/planets/projects/originals && find public/images/planets -type d)",
+      "Bash(file public/images/planets/projects/originals/*)",
+      "Bash(python -c ' *)",
+      "Bash(node projects-scenery-check.mjs)",
+      "Bash(node overlap-zoom-check.mjs)"
+    ],
+    "additionalDirectories": [
+      "d:\\Repositories\\mariano-portfolio\\public\\images\\planets\\projects"
     ]
   }
 }

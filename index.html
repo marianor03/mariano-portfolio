@@ -24,6 +24,7 @@
     <link rel="stylesheet" href="/src/styles/particles.css" />
     <link rel="stylesheet" href="/src/styles/takeover.css" />
     <link rel="stylesheet" href="/src/styles/orbit.css" />
+    <link rel="stylesheet" href="/src/styles/planets.css" />
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to main content</a>
@@ -226,13 +227,15 @@
     <!--
       TAKEOVER — end-of-hero blackout scene. The scroll zoom dives between
       the nameplate's two words into black, then this fixed overlay fades in,
-      plays the gooey loader (ported from uiverse.io — Nawsome) for one 4s
-      cycle, settles on its small center ball with a scroll cue, and the
-      particle field bursts out of that ball. Sequenced by startTakeover()
-      in main.js.
+      plays the gooey loader (ported from uiverse.io — Nawsome), settles into
+      the orange sun, bursts the particle field, and reveals the orbiting
+      planets — which are the site menu (each is a button landing on one of
+      the planet pages below). Sequenced by startTakeover() in main.js.
+      Not aria-hidden as a whole (it contains real navigation); decorative
+      layers carry their own aria-hidden instead.
     -->
-    <div class="takeover" data-takeover aria-hidden="true">
-      <div class="takeover__particles" data-takeover-particles></div>
+    <div class="takeover" data-takeover>
+      <div class="takeover__particles" data-takeover-particles aria-hidden="true"></div>
 
       <!-- Ambient sun glow — outside .blobs so the goo filter's
            overflow:hidden can't clip it. Revealed by .is-sun. -->
@@ -241,22 +244,55 @@
       <!-- Planet orbit (vanilla port of Dominik Koch's OrbitImages —
            CSS Motion Path driven by orbit.js). Painted before the loader
            so planets pass behind the sun, matching the original component's
-           center-content-on-top layering. -->
+           center-content-on-top layering. Planets are disabled until the
+           sun ignites (main.js toggles this with .is-sun). -->
       <div class="takeover__orbit" data-takeover-orbit>
         <div class="orbit-scaling" data-orbit-scaling>
           <div class="orbit-rotation">
             <svg class="orbit-path-svg" viewBox="0 0 1400 1400" aria-hidden="true">
               <path data-orbit-path fill="none" />
             </svg>
-            <div class="orbit-item orbit-planet orbit-planet--mint"></div>
-            <div class="orbit-item orbit-planet orbit-planet--sand"></div>
-            <div class="orbit-item orbit-planet orbit-planet--slate"></div>
-            <div class="orbit-item orbit-planet orbit-planet--rust"></div>
+            <button
+              class="orbit-item orbit-planet orbit-planet--mint"
+              type="button"
+              data-planet-target="about"
+              aria-label="Open About"
+              disabled
+            >
+              <span class="orbit-planet__label" aria-hidden="true">About</span>
+            </button>
+            <button
+              class="orbit-item orbit-planet orbit-planet--sand"
+              type="button"
+              data-planet-target="projects"
+              aria-label="Open Projects"
+              disabled
+            >
+              <span class="orbit-planet__label" aria-hidden="true">Projects</span>
+            </button>
+            <button
+              class="orbit-item orbit-planet orbit-planet--slate"
+              type="button"
+              data-planet-target="skills"
+              aria-label="Open Skills"
+              disabled
+            >
+              <span class="orbit-planet__label" aria-hidden="true">Skills</span>
+            </button>
+            <button
+              class="orbit-item orbit-planet orbit-planet--rust"
+              type="button"
+              data-planet-target="contact"
+              aria-label="Open Contact"
+              disabled
+            >
+              <span class="orbit-planet__label" aria-hidden="true">Contact</span>
+            </button>
           </div>
         </div>
       </div>
 
-      <div class="takeover__loader" data-takeover-loader>
+      <div class="takeover__loader" data-takeover-loader aria-hidden="true">
         <div class="blobs">
           <div class="blob-center"></div>
           <div class="blob"></div>
@@ -282,10 +318,178 @@
         </svg>
       </div>
 
-      <div class="takeover__cue" data-takeover-cue>
-        <span>Scroll down</span>
-        <i></i>
+      <!-- Explains the scene's actual purpose: these orbiting bodies are
+           the site menu. Revealed once the sun ignites and the planets
+           become clickable (main.js), decorative — the buttons themselves
+           already carry real aria-labels. -->
+      <div class="takeover__menu-cue" data-takeover-menu-cue aria-hidden="true">
+        <p class="takeover__menu-cue-label">Menu</p>
+        <p class="takeover__menu-cue-sub">Click a planet to explore</p>
       </div>
+    </div>
+
+    <!--
+      PLANET PAGES — the menu's destinations. Clicking a planet plays the
+      landing animation (openPlanetPage in main.js): the veil floods the
+      screen from the planet's position in its palette, then the page fades
+      in. Each page is a full-screen overlay with its own scroll and three
+      descent sections — Stratosphere, Clouds, Land — and its own palette
+      (the .planet-page--* custom properties in planets.css). Placeholder
+      content for now.
+    -->
+    <div class="planet-veil" data-planet-veil hidden aria-hidden="true"></div>
+
+    <div
+      class="planet-page planet-page--about"
+      data-planet-page="about"
+      role="region"
+      aria-label="About"
+      tabindex="-1"
+      hidden
+    >
+      <button class="planet-page__back" data-planet-back type="button">Back to orbit</button>
+      <section class="planet-section planet-section--stratosphere">
+        <div class="planet-section__content">
+          <p class="planet-section__eyebrow">Stratosphere</p>
+          <h2 class="planet-page__title">About</h2>
+          <p class="planet-section__text">
+            Placeholder — breaking into the About planet's upper atmosphere. A short
+            personal intro line will live here.
+          </p>
+        </div>
+      </section>
+      <section class="planet-section planet-section--clouds">
+        <div class="planet-section__content">
+          <p class="planet-section__eyebrow">Clouds</p>
+          <p class="planet-section__text">
+            Placeholder — descending through the cloud layer. The story of how Mariano
+            works goes here.
+          </p>
+        </div>
+      </section>
+      <section class="planet-section planet-section--land">
+        <div class="planet-section__content">
+          <p class="planet-section__eyebrow">Land</p>
+          <p class="planet-section__text">
+            Placeholder — touchdown. The real About content lands here.
+          </p>
+        </div>
+      </section>
+    </div>
+
+    <div
+      class="planet-page planet-page--projects"
+      data-planet-page="projects"
+      role="region"
+      aria-label="Projects"
+      tabindex="-1"
+      hidden
+    >
+      <button class="planet-page__back" data-planet-back type="button">Back to orbit</button>
+      <section class="planet-section planet-section--stratosphere">
+        <div class="planet-section__content">
+          <p class="planet-section__eyebrow">Stratosphere</p>
+          <h2 class="planet-page__title">Projects</h2>
+          <p class="planet-section__text">
+            Placeholder — entering the Projects planet's upper atmosphere. A one-line
+            pitch for the selected work will live here.
+          </p>
+        </div>
+      </section>
+      <section class="planet-section planet-section--clouds">
+        <div class="planet-section__content">
+          <p class="planet-section__eyebrow">Clouds</p>
+          <p class="planet-section__text">
+            Placeholder — descending through the cloud layer. Featured project cards go
+            here.
+          </p>
+        </div>
+      </section>
+      <section class="planet-section planet-section--land">
+        <div class="planet-section__content">
+          <p class="planet-section__eyebrow">Land</p>
+          <p class="planet-section__text">
+            Placeholder — touchdown. The full project index lands here.
+          </p>
+        </div>
+      </section>
+    </div>
+
+    <div
+      class="planet-page planet-page--skills"
+      data-planet-page="skills"
+      role="region"
+      aria-label="Skills"
+      tabindex="-1"
+      hidden
+    >
+      <button class="planet-page__back" data-planet-back type="button">Back to orbit</button>
+      <section class="planet-section planet-section--stratosphere">
+        <div class="planet-section__content">
+          <p class="planet-section__eyebrow">Stratosphere</p>
+          <h2 class="planet-page__title">Skills</h2>
+          <p class="planet-section__text">
+            Placeholder — entering the Skills planet's upper atmosphere. The toolkit
+            overview will live here.
+          </p>
+        </div>
+      </section>
+      <section class="planet-section planet-section--clouds">
+        <div class="planet-section__content">
+          <p class="planet-section__eyebrow">Clouds</p>
+          <p class="planet-section__text">
+            Placeholder — descending through the cloud layer. Frontend / backend /
+            tooling groups go here.
+          </p>
+        </div>
+      </section>
+      <section class="planet-section planet-section--land">
+        <div class="planet-section__content">
+          <p class="planet-section__eyebrow">Land</p>
+          <p class="planet-section__text">
+            Placeholder — touchdown. Proof-of-skill highlights land here.
+          </p>
+        </div>
+      </section>
+    </div>
+
+    <div
+      class="planet-page planet-page--contact"
+      data-planet-page="contact"
+      role="region"
+      aria-label="Contact"
+      tabindex="-1"
+      hidden
+    >
+      <button class="planet-page__back" data-planet-back type="button">Back to orbit</button>
+      <section class="planet-section planet-section--stratosphere">
+        <div class="planet-section__content">
+          <p class="planet-section__eyebrow">Stratosphere</p>
+          <h2 class="planet-page__title">Contact</h2>
+          <p class="planet-section__text">
+            Placeholder — entering the Contact planet's upper atmosphere. A short
+            invitation to reach out will live here.
+          </p>
+        </div>
+      </section>
+      <section class="planet-section planet-section--clouds">
+        <div class="planet-section__content">
+          <p class="planet-section__eyebrow">Clouds</p>
+          <p class="planet-section__text">
+            Placeholder — descending through the cloud layer. Email / GitHub / LinkedIn
+            links go here.
+          </p>
+        </div>
+      </section>
+      <section class="planet-section planet-section--land">
+        <div class="planet-section__content">
+          <p class="planet-section__eyebrow">Land</p>
+          <p class="planet-section__text">
+            Placeholder — touchdown. The contact form (or a big friendly email link)
+            lands here.
+          </p>
+        </div>
+      </section>
     </div>
 
     <script type="module" src="/src/main.js"></script>

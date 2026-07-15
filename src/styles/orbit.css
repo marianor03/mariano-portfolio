@@ -51,32 +51,98 @@
 /* Planets: shaded spheres via an off-center radial highlight, sized in
    design-space px (the scaling container shrinks them with everything
    else). Palette pulls from the site accents plus warm hues to sit with
-   the orange sun. */
+   the orange sun.
+
+   They're real <button>s (the site menu). The sphere visual lives on
+   ::before, NOT the button: hover growth is a CSS transition on ::before's
+   transform, while the landing animation is a GSAP tween on the button's
+   own transform — split across two elements so the CSS transition never
+   fights (laggily re-eases) the tween's per-frame writes. */
 .orbit-planet {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  background: none;
+  display: block;
   border-radius: 50%;
+  cursor: pointer;
+  /* Inert until the sun ignites — main.js also toggles `disabled`. */
+  pointer-events: none;
+}
+
+.takeover.is-sun .orbit-planet {
+  pointer-events: auto;
+}
+
+.orbit-planet::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--planet-gradient);
   box-shadow: inset -5px -6px 10px rgba(0, 0, 0, 0.4);
+  transition: transform 0.35s var(--ease-premium);
+}
+
+.orbit-planet:hover:not(:disabled)::before,
+.orbit-planet:focus-visible::before {
+  transform: scale(1.18);
+}
+
+.orbit-planet:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 5px;
+}
+
+.orbit-planet__label {
+  position: absolute;
+  top: calc(100% + 0.7rem);
+  left: 50%;
+  /* Counter-rotate against .orbit-rotation's -8deg tilt so the label
+     reads level (same trick as the original component's item content). */
+  transform: translateX(-50%) rotate(8deg);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.3s var(--ease-premium);
+  pointer-events: none;
+}
+
+.orbit-planet:hover:not(:disabled) .orbit-planet__label,
+.orbit-planet:focus-visible .orbit-planet__label {
+  opacity: 1;
 }
 
 .orbit-planet--mint {
   width: 34px;
   height: 34px;
-  background: radial-gradient(circle at 32% 30%, #e9fcf6 0%, var(--color-accent-strong) 55%, #4d8d7f 100%);
+  --planet-gradient: radial-gradient(circle at 32% 30%, #e9fcf6 0%, var(--color-accent-strong) 55%, #4d8d7f 100%);
 }
 
 .orbit-planet--sand {
   width: 48px;
   height: 48px;
-  background: radial-gradient(circle at 32% 30%, #f4e3bd 0%, #e3c07d 55%, #8f7340 100%);
+  --planet-gradient: radial-gradient(circle at 32% 30%, #f4e3bd 0%, #e3c07d 55%, #8f7340 100%);
 }
 
 .orbit-planet--slate {
   width: 24px;
   height: 24px;
-  background: radial-gradient(circle at 32% 30%, #c8d6ea 0%, #93a7c4 55%, #45566e 100%);
+  --planet-gradient: radial-gradient(circle at 32% 30%, #c8d6ea 0%, #93a7c4 55%, #45566e 100%);
 }
 
 .orbit-planet--rust {
   width: 40px;
   height: 40px;
-  background: radial-gradient(circle at 32% 30%, #e8a678 0%, #c97b4a 55%, #6e3a1c 100%);
+  --planet-gradient: radial-gradient(circle at 32% 30%, #e8a678 0%, #c97b4a 55%, #6e3a1c 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orbit-planet::before,
+  .orbit-planet__label {
+    transition: none;
+  }
 }

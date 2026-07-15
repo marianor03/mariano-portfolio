@@ -1,0 +1,291 @@
+/* Planet destination pages — the menu's four landing sites (About /
+   Projects / Skills / Contact). Each is a full-screen fixed overlay with
+   its OWN scroll (overscroll-behavior keeps wheel momentum from chaining
+   into the pinned hero underneath) and three descent sections:
+   Stratosphere → Clouds → Land, one continuous darkness-to-surface
+   gradient across them.
+
+   Each page's palette lives entirely in the .planet-page--* custom
+   properties; everything else styles off those vars. The shared
+   .planet-veil (the landing animation's atmosphere flood) borrows a
+   page's palette by having its .planet-page--* class added in JS. */
+
+.planet-veil {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-planet-veil);
+  background: linear-gradient(to bottom, var(--pp-sky-top), var(--pp-sky-mid));
+  pointer-events: none;
+}
+
+.planet-veil[hidden] {
+  display: none;
+}
+
+.planet-page {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-planet);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--pp-sky-top);
+  color: var(--pp-ink);
+  opacity: 0;
+  /* No scroll-snap: the sections are sticky-stacked (see .planet-section),
+     which makes every section's snap area sit permanently at the scroll
+     port top once stuck — snap points degenerate and browsers fight the
+     free scroll. The overlap effect replaces snapping as the "landing on
+     a stage" feel. */
+}
+
+.planet-page[hidden] {
+  display: none;
+}
+
+.planet-page:focus {
+  outline: none;
+}
+
+/* ——— Palettes ——— */
+
+.planet-page--about {
+  --pp-sky-top: #04100d;
+  --pp-sky-mid: #0d2b24;
+  --pp-cloud: #175243;
+  --pp-land: #1f6b57;
+  --pp-ink: #eafff8;
+  --pp-accent: #9fe8d9;
+}
+
+.planet-page--projects {
+  --pp-sky-top: #140e04;
+  --pp-sky-mid: #33240d;
+  --pp-cloud: #5c431a;
+  --pp-land: #7d5c25;
+  --pp-ink: #fff4dd;
+  --pp-accent: #e3c07d;
+}
+
+.planet-page--skills {
+  --pp-sky-top: #05080f;
+  --pp-sky-mid: #111f38;
+  --pp-cloud: #1f3a63;
+  --pp-land: #2c5288;
+  --pp-ink: #e8f0fd;
+  --pp-accent: #93a7c4;
+}
+
+.planet-page--contact {
+  --pp-sky-top: #120703;
+  --pp-sky-mid: #38190a;
+  --pp-cloud: #642c10;
+  --pp-land: #8a4218;
+  --pp-ink: #ffe9d9;
+  --pp-accent: #e8a678;
+}
+
+/* ——— Projects page: Firefly-generated scenery ———————————————————————
+   The three sections carry AI-generated backdrops (a matched descent:
+   low-orbit horizon → cloud portal → desert surface with oasis + creature).
+   All three were composed with deliberate negative space, so each section
+   repositions its content into that image's empty zone rather than always
+   dead-centering:
+
+     Stratosphere — horizon glows along the BOTTOM edge, so content rides
+       high in the dark of space, with the title at arrival size.
+     Clouds — the clouds form a ring with a clear portal in the middle,
+       so content sits dead center inside it.
+     Land — dunes/oasis/creature own the bottom corners and light rays
+       converge on the open sky, so content floats upper-center.
+
+   A faint top fade on Clouds and Land stitches each section to the one
+   above it, keeping the descent continuous. Gradient fallbacks (the base
+   .planet-section--* rules) still paint first while images stream in. */
+
+.planet-page--projects .planet-section--stratosphere {
+  background:
+    url('/images/planets/projects/stratosphere.jpg') center bottom / cover no-repeat,
+    linear-gradient(to bottom, var(--pp-sky-top), var(--pp-sky-mid));
+  align-items: flex-start;
+  padding-top: clamp(5rem, 16vh, 10rem);
+}
+
+.planet-page--projects .planet-section--stratosphere .planet-page__title {
+  font-size: var(--text-4xl);
+}
+
+.planet-page--projects .planet-section--clouds {
+  background:
+    linear-gradient(to bottom, rgba(20, 14, 4, 0.55), rgba(20, 14, 4, 0) 12%),
+    url('/images/planets/projects/clouds.jpg') center / cover no-repeat,
+    linear-gradient(to bottom, var(--pp-sky-mid), var(--pp-cloud));
+}
+
+/* The artwork brings its own clouds — drop the generic CSS blobs. */
+.planet-page--projects .planet-section--clouds::before,
+.planet-page--projects .planet-section--clouds::after {
+  content: none;
+}
+
+.planet-page--projects .planet-section--land {
+  background:
+    linear-gradient(to bottom, rgba(20, 14, 4, 0.75), rgba(20, 14, 4, 0) 22%),
+    url('/images/planets/projects/land.jpg') center bottom / cover no-repeat,
+    linear-gradient(to bottom, var(--pp-cloud), var(--pp-land));
+  align-items: flex-start;
+  padding-top: clamp(6rem, 22vh, 14rem);
+}
+
+/* Insurance for legibility over painted skies (the art's negative space
+   does most of the work; this catches bright dust motes and rays). */
+.planet-page--projects .planet-section__content {
+  text-shadow: 0 1px 14px rgba(10, 7, 2, 0.55);
+}
+
+/* ——— Chrome ——— */
+
+.planet-page__back {
+  position: fixed;
+  top: var(--space-5);
+  left: var(--gutter);
+  z-index: var(--z-raised);
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--pp-accent);
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--pp-ink);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-premium);
+}
+
+.planet-page__back:hover {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.planet-page__back:focus-visible {
+  outline: 2px solid var(--pp-accent);
+  outline-offset: 2px;
+}
+
+/* ——— Descent sections ——— */
+
+/* Sticky-stacked deck: every section pins to the top of the page's scroll
+   port when reached, so the NEXT section scrolls up OVER it (overlapping
+   its background) instead of pushing it away — the transition is scrubbed
+   entirely by the scroll position, never by a timer. Later DOM order
+   paints above, so no z-index bookkeeping needed. */
+.planet-section {
+  position: sticky;
+  top: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-9) var(--gutter);
+  overflow: hidden;
+}
+
+/* Traveling seam-hider: every section after the first dissolves its own
+   top edge via a mask (transparent at the very top -> opaque by 12vh), so
+   as it slides over the pinned previous section, the previous one shows
+   through the fading strip — a genuine scroll-scrubbed cross-dissolve.
+   A box-shadow bloom can't do this job: shadows paint OUTSIDE the box, so
+   the incoming image would still cut in at full opacity on its first
+   pixel row. The section's internal top gradient (see the projects rules
+   below) supplies the soft color contrast inside that dissolve band. */
+.planet-section + .planet-section {
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 12vh);
+  mask-image: linear-gradient(to bottom, transparent, #000 12vh);
+}
+
+.planet-section--stratosphere {
+  background: linear-gradient(to bottom, var(--pp-sky-top), var(--pp-sky-mid));
+}
+
+.planet-section--clouds {
+  background: linear-gradient(to bottom, var(--pp-sky-mid), var(--pp-cloud));
+}
+
+.planet-section--land {
+  background: linear-gradient(to bottom, var(--pp-cloud), var(--pp-land));
+}
+
+/* Soft cloud masses drifting at the section's edges — pure CSS, no assets. */
+.planet-section--clouds::before,
+.planet-section--clouds::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  background: rgba(255, 255, 255, 0.07);
+  pointer-events: none;
+}
+
+.planet-section--clouds::before {
+  width: 46vw;
+  height: 22vh;
+  left: 8vw;
+  top: 24%;
+}
+
+.planet-section--clouds::after {
+  width: 38vw;
+  height: 18vh;
+  right: 6vw;
+  bottom: 18%;
+}
+
+.planet-section__content {
+  max-width: 36rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  text-align: center;
+  /* Revealed by IntersectionObserver (main.js) adding .is-visible to the
+     parent section as it scrolls into the page's own viewport. */
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.7s var(--ease-premium),
+    transform 0.7s var(--ease-premium);
+}
+
+.planet-section.is-visible .planet-section__content {
+  opacity: 1;
+  transform: none;
+}
+
+.planet-section__eyebrow {
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--pp-accent);
+}
+
+.planet-page__title {
+  font-family: var(--font-display);
+  font-size: var(--text-3xl);
+  font-weight: 500;
+  line-height: var(--leading-tight);
+}
+
+.planet-section__text {
+  font-size: var(--text-md);
+  line-height: var(--leading-normal);
+  opacity: 0.78;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .planet-section__content {
+    transition: none;
+    opacity: 1;
+    transform: none;
+  }
+}

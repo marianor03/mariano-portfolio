@@ -8,6 +8,7 @@ gsap.registerPlugin(ScrollTrigger);
 initHero();
 initReveals();
 initScrollCueActivity();
+initPlanetPages();
 
 function initHero() {
   const hero = document.querySelector('[data-hero]');
@@ -56,7 +57,7 @@ function buildScrollSequence({ hero, frames, images, beats, scrollCue, takeover 
   gsap.set(beats[0], { autoAlpha: 1 });
   gsap.set(beats.slice(1), { autoAlpha: 0 });
 
-  // Same idle/active fade the takeover's "Scroll down" cue uses — ready
+  // Fades out while the user is scrolling, back in once idle — ready
   // immediately since the hero (and this hint) is visible from page load.
   const heroCue = scrollCue ? createIdleCue(scrollCue) : null;
   if (heroCue) heroCue.setReady(true);
@@ -199,18 +200,16 @@ function buildScrollSequence({ hero, frames, images, beats, scrollCue, takeover 
 let takeoverStarted = false;
 let takeoverSeq = null;
 let particleField = null;
-let takeoverCue = null;
 
 function startTakeover(takeover) {
   if (takeoverStarted) return;
   takeoverStarted = true;
 
   const loader = takeover.querySelector('[data-takeover-loader]');
-  const cue = takeover.querySelector('[data-takeover-cue]');
+  const menuCue = takeover.querySelector('[data-takeover-menu-cue]');
   const particlesContainer = takeover.querySelector('[data-takeover-particles]');
   const orbit = takeover.querySelector('[data-takeover-orbit]');
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (!takeoverCue) takeoverCue = createIdleCue(cue);
 
   // Everything for this run lives on one timeline so resetTakeover() can
   // stop all of it atomically with a single kill() — including the burst,
@@ -227,15 +226,14 @@ function startTakeover(takeover) {
     // GSAP tweens and the loader's CSS run aren't covered by the global
     // reduced-motion CSS block, so branch explicitly: skip the loop run and
     // the particle burst, land straight on the ignited sun with the planets
-    // parked in place (paused orbit) + cue.
+    // parked in place (paused orbit) + the menu cue.
     seq.call(() => {
       takeover.classList.add('is-settled', 'is-sun');
       startOrbit(takeover, { paused: true });
+      setPlanetsEnabled(takeover, true);
     });
     if (orbit) seq.to(orbit, { opacity: 1, duration: 0.6, ease: 'power1.out' }, '+=0.3');
-    seq.call(() => {
-      if (takeover.classList.contains('is-sun')) takeoverCue.setReady(true);
-    }, [], '<');
+    if (menuCue) seq.to(menuCue, { opacity: 1, duration: 0.6, ease: 'power1.out' }, '<');
     return;
   }
 
@@ -277,25 +275,21 @@ function startTakeover(takeover) {
     },
     'burst'
   );
-  seq.call(() => takeover.classList.add('is-sun'), [], 'burst+=0.15');
+  seq.call(() => {
+    takeover.classList.add('is-sun');
+    setPlanetsEnabled(takeover, true);
+  }, [], 'burst+=0.15');
   seq.call(() => startOrbit(takeover), [], 'burst+=0.3');
   if (orbit) seq.to(orbit, { opacity: 1, duration: 1.4, ease: 'power1.inOut' }, 'burst+=0.6');
-  // Gated on 'is-sun' explicitly (not just this position in the timeline)
-  // so the cue structurally cannot appear during the loader's fade-in or
-  // its 5s loop — it stays not-ready no matter how the burst timing above
-  // gets tuned later.
-  seq.call(() => {
-    if (takeover.classList.contains('is-sun')) takeoverCue.setReady(true);
-  }, [], 'burst+=1.1');
+  if (menuCue) seq.to(menuCue, { opacity: 1, duration: 0.6, ease: 'power1.out' }, 'burst+=1.1');
 }
 
-// Shared by every "scroll hint" on the site (the hero's "Scroll" cue and
-// the takeover's "Scroll down" cue): fades in while the user is idle, and
-// fades out the moment they scroll. One global listener drives every
-// registered cue. 'wheel'/'touchmove' catch attempted scrolling even at
-// the very bottom of the page (where 'scroll' itself won't fire since
-// scrollY can't change further), so trying to scroll past the end still
-// hides a cue.
+// Shared by every "scroll hint" on the site (currently just the hero's
+// "Scroll" cue): fades in while the user is idle, and fades out the moment
+// they scroll. One global listener drives every registered cue.
+// 'wheel'/'touchmove' catch attempted scrolling even at the very bottom of
+// the page (where 'scroll' itself won't fire since scrollY can't change
+// further), so trying to scroll past the end still hides a cue.
 const idleCues = [];
 const CUE_IDLE_DELAY = 220;
 
@@ -306,9 +300,8 @@ function initScrollCueActivity() {
   window.addEventListener('scroll', onActivity, { passive: true });
 }
 
-// Each cue tracks its own ready/visible state so one can be mid-fade while
-// another hasn't been revealed yet (e.g. the takeover's cue stays not-ready
-// until the sun ignites, regardless of what the hero's cue is doing).
+// Each cue tracks its own ready/visible state so one can be mid-fade
+// independently of any other registered cue's state.
 function createIdleCue(el) {
   let ready = false;
   let visible = false;
@@ -358,11 +351,27 @@ function prewarmParticles(takeover) {
 }
 
 let orbitSystem = null;
+let orbitHoverPaused = false;
 
 function startOrbit(takeover, options) {
   const container = takeover.querySelector('[data-takeover-orbit]');
   if (!container || orbitSystem) return;
   orbitSystem = initOrbit(container, options);
+}
+
+function pauseOrbitForHover() {
+  if (!orbitSystem || orbitHoverPaused) return;
+  orbitHoverPaused = true;
+  orbitSystem.pause();
+}
+
+function resumeOrbitFromHover() {
+  if (!orbitHoverPaused) return;
+  orbitHoverPaused = false;
+  // A planet page opening/open owns the pause once it's underway — don't
+  // resume out from under it just because the pointer also left the button.
+  if (activePlanetPage || planetTransitionRunning) return;
+  if (orbitSystem) orbitSystem.resume();
 }
 
 function resetTakeover(takeover) {
@@ -375,8 +384,9 @@ function resetTakeover(takeover) {
   }
 
   takeover.classList.remove('is-running', 'is-settled', 'is-sun');
+  setPlanetsEnabled(takeover, false);
   gsap.set(takeover.querySelector('[data-takeover-loader]'), { opacity: 0 });
-  if (takeoverCue) takeoverCue.setReady(false);
+  gsap.set(takeover.querySelector('[data-takeover-menu-cue]'), { opacity: 0 });
   const particlesContainer = takeover.querySelector('[data-takeover-particles]');
   if (particlesContainer) gsap.set(particlesContainer, { opacity: 0 });
   const orbit = takeover.querySelector('[data-takeover-orbit]');
@@ -394,6 +404,172 @@ function resetTakeover(takeover) {
     orbitSystem.destroy();
     orbitSystem = null;
   }
+}
+
+// ——— Planet pages (the menu's destinations) ———————————————————————————
+// Each orbiting planet is a button that lands on a full-screen scrollable
+// page (Stratosphere → Clouds → Land). The landing animation: the galaxy
+// fades back while the clicked planet grows, its atmosphere (the veil, in
+// the destination page's palette) floods the screen out from the planet's
+// position, and the page fades in over it.
+
+let activePlanetPage = null;
+let planetTransitionRunning = false;
+
+function setPlanetsEnabled(takeover, enabled) {
+  takeover.querySelectorAll('[data-planet-target]').forEach((btn) => {
+    btn.disabled = !enabled;
+  });
+}
+
+function initPlanetPages() {
+  const takeover = document.querySelector('[data-takeover]');
+  if (!takeover) return;
+
+  takeover.querySelectorAll('[data-planet-target]').forEach((btn) => {
+    btn.addEventListener('click', () => openPlanetPage(takeover, btn));
+    // Freeze the whole orbit while aiming at one planet — easier to read
+    // its label and line up a click. pointer/focus pair covers mouse and
+    // keyboard alike; disabled buttons (pre-ignition, or a page already
+    // open) don't dispatch these, so no extra guard needed there.
+    btn.addEventListener('pointerenter', pauseOrbitForHover);
+    btn.addEventListener('pointerleave', resumeOrbitFromHover);
+    btn.addEventListener('focus', pauseOrbitForHover);
+    btn.addEventListener('blur', resumeOrbitFromHover);
+  });
+  document.querySelectorAll('[data-planet-back]').forEach((btn) => {
+    btn.addEventListener('click', () => closePlanetPage());
+  });
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closePlanetPage();
+  });
+
+  // Section reveals inside each page. IntersectionObserver rather than
+  // ScrollTrigger because these pages scroll in their own overlay, not the
+  // document — IO takes that custom root directly.
+  document.querySelectorAll('[data-planet-page]').forEach((page) => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) entry.target.classList.add('is-visible');
+        });
+      },
+      { root: page, threshold: 0.35 }
+    );
+    page.querySelectorAll('.planet-section').forEach((section) => observer.observe(section));
+  });
+}
+
+function openPlanetPage(takeover, btn) {
+  if (activePlanetPage || planetTransitionRunning) return;
+  if (!takeover.classList.contains('is-sun')) return;
+
+  const name = btn.dataset.planetTarget;
+  const page = document.querySelector(`[data-planet-page="${name}"]`);
+  const veil = document.querySelector('[data-planet-veil]');
+  if (!page || !veil) return;
+
+  planetTransitionRunning = true;
+  if (orbitSystem) orbitSystem.pause();
+  setPlanetsEnabled(takeover, false);
+
+  page.hidden = false;
+  page.scrollTop = 0;
+  gsap.set(page, { opacity: 0 });
+
+  const fadeTargets = [
+    takeover.querySelector('[data-takeover-loader]'),
+    takeover.querySelector('.takeover__sunglow'),
+    takeover.querySelector('[data-takeover-particles]'),
+    takeover.querySelector('.orbit-path-svg'),
+    takeover.querySelector('[data-takeover-menu-cue]'),
+    ...[...takeover.querySelectorAll('.orbit-planet')].filter((p) => p !== btn),
+  ].filter(Boolean);
+
+  const finishOpen = () => {
+    // The page is fully opaque now — quietly restore the galaxy behind it
+    // so the return trip needs no rebuild...
+    veil.hidden = true;
+    veil.classList.remove(`planet-page--${name}`);
+    gsap.set(veil, { clearProps: 'clipPath' });
+    gsap.set(btn, { clearProps: 'transform' });
+    gsap.set(fadeTargets, { opacity: 1 });
+    // ...except the particle field: stop paying for its WebGL loop while
+    // reading (recreated at full spread on the way back).
+    if (particleField) {
+      particleField.destroy();
+      particleField = null;
+    }
+    activePlanetPage = { page, takeover, name };
+    planetTransitionRunning = false;
+    page.focus({ preventScroll: true });
+  };
+
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    gsap.to(page, { opacity: 1, duration: 0.4, ease: 'power1.out', onComplete: finishOpen });
+    return;
+  }
+
+  // Landing geometry: the veil's circle grows from the planet's on-screen
+  // center until it covers the farthest viewport corner.
+  const rect = btn.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  const cover =
+    Math.hypot(Math.max(cx, window.innerWidth - cx), Math.max(cy, window.innerHeight - cy)) * 1.05;
+
+  veil.classList.add(`planet-page--${name}`);
+  veil.hidden = false;
+
+  const tl = gsap.timeline({ onComplete: finishOpen });
+  tl.to(fadeTargets, { opacity: 0, duration: 0.45, ease: 'power1.out' }, 0);
+  // Approach: the planet swells as the "camera" closes in...
+  tl.to(btn, { scale: 5, duration: 1.05, ease: 'power2.in' }, 0);
+  // ...its atmosphere floods out from it...
+  tl.fromTo(
+    veil,
+    { clipPath: `circle(0px at ${cx}px ${cy}px)` },
+    { clipPath: `circle(${cover}px at ${cx}px ${cy}px)`, duration: 0.95, ease: 'power2.in' },
+    0.1
+  );
+  // ...and the page surfaces out of that atmosphere with a real zoom:
+  // it arrives oversized and settles to rest, reading as the final push
+  // down through the stratosphere onto the page.
+  tl.fromTo(
+    page,
+    { opacity: 0, scale: 1.3 },
+    { opacity: 1, scale: 1, duration: 1.15, ease: 'power2.out' },
+    0.95
+  );
+}
+
+function closePlanetPage() {
+  if (!activePlanetPage || planetTransitionRunning) return;
+  const { page, takeover } = activePlanetPage;
+  planetTransitionRunning = true;
+
+  // Re-arm the galaxy behind the page before revealing it: fresh particle
+  // field already at full spread (the burst happened long ago) and the
+  // orbit resumed from where it paused. Skipped under reduced motion,
+  // which never had a particle field to begin with.
+  if (!particleField && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    prewarmParticles(takeover);
+    if (particleField) particleField.setSpread(10);
+  }
+  if (orbitSystem) orbitSystem.resume();
+
+  gsap.to(page, {
+    opacity: 0,
+    duration: 0.55,
+    ease: 'power1.inOut',
+    onComplete: () => {
+      page.hidden = true;
+      gsap.set(page, { clearProps: 'transform,opacity' });
+      activePlanetPage = null;
+      planetTransitionRunning = false;
+      setPlanetsEnabled(takeover, true);
+    },
+  });
 }
 
 function initReveals() {

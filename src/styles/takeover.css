@@ -1,9 +1,9 @@
 /* Post-hero takeover scene: a fixed overlay whose opacity is scrubbed in by
    the hero timeline's final zoom (main.js dives the page into the gap
    between the nameplate's two words, so the screen is already near-black
-   when this fades over it). Inside, the gooey blob loader plays one 4s
-   cycle, settles into its small center ball ("first stage"), a scroll cue
-   appears, and the particle field bursts out of the ball. */
+   when this fades over it). Inside, the gooey blob loader plays, settles
+   into its small center ball, then ignites into the sun as the particle
+   field bursts and the orbiting planets (the site menu) fade in. */
 
 .takeover {
   position: fixed;
@@ -308,45 +308,35 @@
   }
 }
 
-.takeover__cue {
+/* Top-left, oversized — a label, not a subtle hint. Explains that the
+   scene is the menu the instant it becomes true (the sun igniting is what
+   makes the planets clickable). Plain opacity fade, no visibility toggle:
+   nothing here is expensive to paint, so there's no pre-warm concern like
+   the loader/particles had. */
+.takeover__menu-cue {
   position: absolute;
-  left: 50%;
-  bottom: var(--space-6);
-  transform: translateX(-50%);
+  top: var(--space-6);
+  left: var(--gutter);
   z-index: var(--z-raised);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: var(--space-2);
-  color: var(--color-text-muted);
-  font-size: var(--text-xs);
+  gap: var(--space-1);
+  opacity: 0;
+}
+
+.takeover__menu-cue-label {
+  font-family: var(--font-nameplate);
+  font-weight: 400;
+  font-size: clamp(2.5rem, 1.8rem + 4vw, 4.5rem);
+  line-height: 0.9;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-text);
+}
+
+.takeover__menu-cue-sub {
+  font-size: var(--text-sm);
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
-  opacity: 0;
-  visibility: hidden;
-}
-
-.takeover__cue i {
-  display: block;
-  width: 1px;
-  height: 2rem;
-  background: linear-gradient(to bottom, var(--color-text-muted), transparent);
-  animation: takeover-cue-pulse 1.8s var(--ease-premium) infinite;
-}
-
-@keyframes takeover-cue-pulse {
-  0%,
-  100% {
-    opacity: 0.3;
-  }
-
-  50% {
-    opacity: 1;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .takeover__cue i {
-    animation: none;
-  }
+  color: var(--color-accent);
 }
