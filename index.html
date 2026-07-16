@@ -81,7 +81,7 @@
           </div>
         </div>
 
-        <div class="hero__scroll-cue" data-hero-scroll-cue aria-hidden="true">
+        <div class="hero__scroll-cue liquid-glass" data-hero-scroll-cue aria-hidden="true">
           <span>Scroll</span>
           <i></i>
         </div>
@@ -259,7 +259,7 @@
               aria-label="Open About"
               disabled
             >
-              <span class="orbit-planet__label" aria-hidden="true">About</span>
+              <span class="orbit-planet__label liquid-glass" aria-hidden="true">About</span>
             </button>
             <button
               class="orbit-item orbit-planet orbit-planet--sand"
@@ -268,7 +268,7 @@
               aria-label="Open Projects"
               disabled
             >
-              <span class="orbit-planet__label" aria-hidden="true">Projects</span>
+              <span class="orbit-planet__label liquid-glass" aria-hidden="true">Projects</span>
             </button>
             <button
               class="orbit-item orbit-planet orbit-planet--slate"
@@ -277,7 +277,7 @@
               aria-label="Open Skills"
               disabled
             >
-              <span class="orbit-planet__label" aria-hidden="true">Skills</span>
+              <span class="orbit-planet__label liquid-glass" aria-hidden="true">Skills</span>
             </button>
             <button
               class="orbit-item orbit-planet orbit-planet--rust"
@@ -286,7 +286,7 @@
               aria-label="Open Contact"
               disabled
             >
-              <span class="orbit-planet__label" aria-hidden="true">Contact</span>
+              <span class="orbit-planet__label liquid-glass" aria-hidden="true">Contact</span>
             </button>
           </div>
         </div>
@@ -324,7 +324,7 @@
            already carry real aria-labels. -->
       <div class="takeover__menu-cue" data-takeover-menu-cue aria-hidden="true">
         <p class="takeover__menu-cue-label">Menu</p>
-        <p class="takeover__menu-cue-sub">Click a planet to explore</p>
+        <p class="takeover__menu-cue-sub liquid-glass">Click a planet to explore</p>
       </div>
     </div>
 
@@ -337,7 +337,14 @@
       (the .planet-page--* custom properties in planets.css). Placeholder
       content for now.
     -->
-    <div class="planet-veil" data-planet-veil hidden aria-hidden="true"></div>
+    <!-- Landing veil layers: the palette-tinted atmosphere flood (the veil
+         itself), a blackout for the entry-burn beat, and a surface glow
+         that rises from the bottom edge to foreshadow the page sliding up
+         from that same edge. All driven by openPlanetPage() in main.js. -->
+    <div class="planet-veil" data-planet-veil hidden aria-hidden="true">
+      <div class="planet-veil__blackout" data-veil-blackout></div>
+      <div class="planet-veil__glow" data-veil-glow></div>
+    </div>
 
     <div
       class="planet-page planet-page--about"
@@ -347,7 +354,10 @@
       tabindex="-1"
       hidden
     >
-      <button class="planet-page__back" data-planet-back type="button">Back to orbit</button>
+      <div class="planet-page__return-cue" data-return-cue>
+        <i></i>
+        <span class="liquid-glass">Scroll up to return to orbit</span>
+      </div>
       <section class="planet-section planet-section--stratosphere">
         <div class="planet-section__content">
           <p class="planet-section__eyebrow">Stratosphere</p>
@@ -377,6 +387,10 @@
       </section>
     </div>
 
+    <!-- PROJECTS — redesigned: parallax backdrop layers (data-section-bg),
+         a scroll-driven descent gauge, glassy featured strips in the
+         clouds, and the archive index on the surface. All scroll motion is
+         wired by createPlanetScrollFX() in main.js. -->
     <div
       class="planet-page planet-page--projects"
       data-planet-page="projects"
@@ -385,34 +399,95 @@
       tabindex="-1"
       hidden
     >
-      <button class="planet-page__back" data-planet-back type="button">Back to orbit</button>
+      <div class="planet-page__return-cue" data-return-cue>
+        <i></i>
+        <span class="liquid-glass">Scroll up to return to orbit</span>
+      </div>
+
+      <div class="planet-page__gauge liquid-glass" aria-hidden="true">
+        <span class="planet-page__gauge-stage" data-gauge-stage>Stratosphere</span>
+        <div class="planet-page__gauge-track">
+          <i class="planet-page__gauge-marker" data-gauge-marker></i>
+        </div>
+      </div>
+
+      <div class="planet-page__track" data-descent-track>
+        <div class="planet-page__stage">
       <section class="planet-section planet-section--stratosphere">
+        <div class="planet-section__bg" data-section-bg aria-hidden="true"></div>
         <div class="planet-section__content">
-          <p class="planet-section__eyebrow">Stratosphere</p>
-          <h2 class="planet-page__title">Projects</h2>
-          <p class="planet-section__text">
-            Placeholder — entering the Projects planet's upper atmosphere. A one-line
-            pitch for the selected work will live here.
+          <p class="planet-section__eyebrow">Stratosphere — selected work</p>
+          <h2 class="planet-page__title planet-page__title--display">Projects</h2>
+          <p class="planet-section__text planet-section__text--lede">
+            Placeholder — entering the Projects planet. Three featured builds wait in
+            the clouds; the full archive is down on the surface.
           </p>
         </div>
       </section>
-      <section class="planet-section planet-section--clouds">
-        <div class="planet-section__content">
-          <p class="planet-section__eyebrow">Clouds</p>
-          <p class="planet-section__text">
-            Placeholder — descending through the cloud layer. Featured project cards go
-            here.
-          </p>
+
+      <section class="planet-section planet-section--clouds planet-section--fx">
+        <div class="planet-section__bg" data-section-bg aria-hidden="true"></div>
+        <div class="planet-section__content planet-section__content--wide">
+          <p class="planet-section__eyebrow" data-fx-item>Clouds — featured</p>
+          <ul class="project-strips">
+            <li class="project-strip liquid-glass" data-fx-item>
+              <span class="project-strip__index" aria-hidden="true">01</span>
+              <span class="project-strip__body">
+                <span class="project-strip__name">Project One</span>
+                <span class="project-strip__desc">Placeholder — one line on what it does and why it mattered.</span>
+              </span>
+              <span class="project-strip__tags">React · Tailwind</span>
+            </li>
+            <li class="project-strip liquid-glass" data-fx-item>
+              <span class="project-strip__index" aria-hidden="true">02</span>
+              <span class="project-strip__body">
+                <span class="project-strip__name">Project Two</span>
+                <span class="project-strip__desc">Placeholder — one line on what it does and why it mattered.</span>
+              </span>
+              <span class="project-strip__tags">Python · API</span>
+            </li>
+            <li class="project-strip liquid-glass" data-fx-item>
+              <span class="project-strip__index" aria-hidden="true">03</span>
+              <span class="project-strip__body">
+                <span class="project-strip__name">Project Three</span>
+                <span class="project-strip__desc">Placeholder — one line on what it does and why it mattered.</span>
+              </span>
+              <span class="project-strip__tags">JavaScript · Full-stack</span>
+            </li>
+          </ul>
         </div>
       </section>
-      <section class="planet-section planet-section--land">
-        <div class="planet-section__content">
-          <p class="planet-section__eyebrow">Land</p>
-          <p class="planet-section__text">
-            Placeholder — touchdown. The full project index lands here.
-          </p>
+
+      <section class="planet-section planet-section--land planet-section--fx">
+        <div class="planet-section__bg" data-section-bg aria-hidden="true"></div>
+        <div class="planet-section__content planet-section__content--wide">
+          <p class="planet-section__eyebrow" data-fx-item>Land — the archive</p>
+          <ul class="project-index">
+            <li class="project-index__row" data-fx-item>
+              <span class="project-index__num" aria-hidden="true">04</span>
+              <span class="project-index__name">Placeholder project</span>
+              <span class="project-index__year">2026</span>
+            </li>
+            <li class="project-index__row" data-fx-item>
+              <span class="project-index__num" aria-hidden="true">05</span>
+              <span class="project-index__name">Placeholder project</span>
+              <span class="project-index__year">2025</span>
+            </li>
+            <li class="project-index__row" data-fx-item>
+              <span class="project-index__num" aria-hidden="true">06</span>
+              <span class="project-index__name">Placeholder project</span>
+              <span class="project-index__year">2025</span>
+            </li>
+            <li class="project-index__row" data-fx-item>
+              <span class="project-index__num" aria-hidden="true">07</span>
+              <span class="project-index__name">Placeholder project</span>
+              <span class="project-index__year">2024</span>
+            </li>
+          </ul>
         </div>
       </section>
+        </div>
+      </div>
     </div>
 
     <div
@@ -423,7 +498,10 @@
       tabindex="-1"
       hidden
     >
-      <button class="planet-page__back" data-planet-back type="button">Back to orbit</button>
+      <div class="planet-page__return-cue" data-return-cue>
+        <i></i>
+        <span class="liquid-glass">Scroll up to return to orbit</span>
+      </div>
       <section class="planet-section planet-section--stratosphere">
         <div class="planet-section__content">
           <p class="planet-section__eyebrow">Stratosphere</p>
@@ -461,7 +539,10 @@
       tabindex="-1"
       hidden
     >
-      <button class="planet-page__back" data-planet-back type="button">Back to orbit</button>
+      <div class="planet-page__return-cue" data-return-cue>
+        <i></i>
+        <span class="liquid-glass">Scroll up to return to orbit</span>
+      </div>
       <section class="planet-section planet-section--stratosphere">
         <div class="planet-section__content">
           <p class="planet-section__eyebrow">Stratosphere</p>

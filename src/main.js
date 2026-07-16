@@ -1,9 +1,19 @@
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { CustomEase } from 'gsap/CustomEase';
+import { Observer } from 'gsap/Observer';
 import { initParticles } from './particles.js';
 import { initOrbit } from './orbit.js';
 
-gsap.registerPlugin(ScrollTrigger);
+gsap.registerPlugin(ScrollTrigger, CustomEase, Observer);
+
+// Bespoke gravity curve for the planet-landing dive: alive from the first
+// frame (a built-in power ease feels dead at the start), drifting forward,
+// then accelerating hard into the atmosphere — free-fall, not a tween.
+CustomEase.create('landing-dive', 'M0,0 C0.3,0.02 0.5,0.08 0.68,0.28 0.85,0.5 0.94,0.8 1,1');
+// Its mirror for the return trip: launched hard out of the atmosphere,
+// then a long deceleration as the craft settles back into orbit distance.
+CustomEase.create('orbit-return', 'M0,0 C0.06,0.2 0.15,0.5 0.32,0.72 0.5,0.92 0.7,0.98 1,1');
 
 initHero();
 initReveals();
@@ -66,7 +76,10 @@ function buildScrollSequence({ hero, frames, images, beats, scrollCue, takeover 
 
   const segment = 1 / frames.length;
   const overlap = segment * 0.35;
-  const maxBlur = 22;
+  // Capped at 18px: transition-time blur above ~20px gets expensive to
+  // rasterize, especially in Safari, and past this level the extra blur is
+  // visually indistinguishable mid-crossfade anyway.
+  const maxBlur = 18;
 
   const tl = gsap.timeline({
     scrollTrigger: {
@@ -78,13 +91,17 @@ function buildScrollSequence({ hero, frames, images, beats, scrollCue, takeover 
       anticipatePin: 1,
       invalidateOnRefresh: true,
       onUpdate: (self) => {
-        // Scrolling back up past the zoom (progress well below where it
-        // starts at 1/2 = 0.5) means the user has left the takeover scene.
-        // Tear it down rather than leaving its particle field's WebGL
-        // render loop running forever in the background — left alive, it
-        // permanently taxes every frame afterward, including a second pass
-        // back down through this same zoom.
-        if (takeover && self.progress < 0.45) resetTakeover(takeover);
+        // Tear the takeover scene down as soon as the user retreats below
+        // the blackout (overlay only starts fading in at progress ~0.775,
+        // so at <0.7 the scene is guaranteed invisible — resetting here
+        // can't be seen). The threshold MUST sit above where the zoom
+        // starts (0.5): it used to be 0.45, which left a dead zone where
+        // you could scroll up far enough to see the hero again, come back
+        // down, and dive into a takeover still in its lit end state (sun +
+        // orbit + menu) instead of black + loader — reading as a
+        // completely different zoom animation. Resetting also frees the
+        // particle field's WebGL loop instead of taxing every frame.
+        if (takeover && self.progress < 0.7) resetTakeover(takeover);
       },
     },
   });
@@ -192,8 +209,15 @@ function buildScrollSequence({ hero, frames, images, beats, scrollCue, takeover 
     // entirely (scrub-reversible: scrolling back re-runs this set in
     // reverse and restores it).
     tl.set(hero, { autoAlpha: 0 }, zoomStart + zoomDuration * 0.92);
-    // Slightly before the timeline's very end so the scrub reliably crosses it.
-    tl.call(() => startTakeover(takeover), [], zoomStart + zoomDuration - 0.02);
+    // Slightly before the timeline's very end so the scrub reliably crosses
+    // it. Guarded on the REAL scroll progress: the smoothed playhead also
+    // crosses this position while sweeping backward after a fast jump to
+    // the top, and by then onUpdate may have already reset takeoverStarted
+    // — without the guard, that reverse crossing ghost-started the whole
+    // loader sequence invisibly at the top of the page.
+    tl.call(() => {
+      if (tl.scrollTrigger.progress > 0.9) startTakeover(takeover);
+    }, [], zoomStart + zoomDuration - 0.02);
   }
 }
 
@@ -243,12 +267,14 @@ function startTakeover(takeover) {
   // is a genuine synchronous stall, and it's far less noticeable while the
   // blobs are already looping than during the settle-and-burst beat.
   seq.call(() => prewarmParticles(takeover), [], '+=0.1');
-  // The loader is shown for exactly 5s total, and must complete exactly 3
-  // full loops in that window — so each cycle runs at 5/3s (kept in sync
-  // with --loop in takeover.css). Every cycle ends with everything at scale
-  // 0, so settling right at the 5s boundary lets the static ball grow back
-  // in (takeover-ball-in) without a visible jump.
-  const runDuration = 5;
+  // Reduced from 3 loops to 2 (each cycle still paced at 5/3s, kept in
+  // sync with --loop in takeover.css) — less time on-screen before
+  // settling. Every cycle ends with everything at scale 0, so settling
+  // right on a cycle boundary lets the static ball grow back in
+  // (takeover-ball-in) without a visible jump.
+  const loopDuration = 5 / 3;
+  const loopCount = 2;
+  const runDuration = loopDuration * loopCount;
   seq.call(() => takeover.classList.add('is-settled'), [], `+=${runDuration}`);
 
   // Burst the particles out of the ball just as it finishes growing in.
@@ -281,7 +307,17 @@ function startTakeover(takeover) {
   }, [], 'burst+=0.15');
   seq.call(() => startOrbit(takeover), [], 'burst+=0.3');
   if (orbit) seq.to(orbit, { opacity: 1, duration: 1.4, ease: 'power1.inOut' }, 'burst+=0.6');
-  if (menuCue) seq.to(menuCue, { opacity: 1, duration: 0.6, ease: 'power1.out' }, 'burst+=1.1');
+  // The MENU reveal is a rare, high-emotion beat (the site's nav being
+  // born) — it gets delight budget: rising out of a soft blur rather than
+  // a flat opacity pop. Blur kept small (6px) for cheap rasterization.
+  if (menuCue) {
+    seq.fromTo(
+      menuCue,
+      { opacity: 0, y: 16, filter: 'blur(6px)' },
+      { opacity: 1, y: 0, filter: 'blur(0px)', duration: 0.9, ease: 'power2.out' },
+      'burst+=1.1'
+    );
+  }
 }
 
 // Shared by every "scroll hint" on the site (currently just the hero's
@@ -415,6 +451,7 @@ function resetTakeover(takeover) {
 
 let activePlanetPage = null;
 let planetTransitionRunning = false;
+let planetOpenTl = null;
 
 function setPlanetsEnabled(takeover, enabled) {
   takeover.querySelectorAll('[data-planet-target]').forEach((btn) => {
@@ -437,11 +474,14 @@ function initPlanetPages() {
     btn.addEventListener('focus', pauseOrbitForHover);
     btn.addEventListener('blur', resumeOrbitFromHover);
   });
-  document.querySelectorAll('[data-planet-back]').forEach((btn) => {
-    btn.addEventListener('click', () => closePlanetPage());
-  });
+  document.querySelectorAll('[data-planet-page]').forEach((page) => createReturnPull(page));
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closePlanetPage();
+    if (e.key !== 'Escape') return;
+    // Interruptibility: never lock the user inside the ~2s landing. If
+    // it's still playing, jump it to its end (finishOpen runs, state
+    // becomes consistent) and exit from there in the same keypress.
+    if (planetTransitionRunning && planetOpenTl) planetOpenTl.progress(1);
+    closePlanetPage();
   });
 
   // Section reveals inside each page. IntersectionObserver rather than
@@ -450,6 +490,13 @@ function initPlanetPages() {
   document.querySelectorAll('[data-planet-page]').forEach((page) => {
     const observer = new IntersectionObserver(
       (entries) => {
+        // Held back while the landing cinematic is mid-flight: unhiding the
+        // page delivers fresh intersection records asynchronously, which
+        // would mark the first section visible behind the blackout and burn
+        // its content cascade unseen. The landing timeline reveals the
+        // first section itself at touchdown; later sections re-observe
+        // normally once the flag clears.
+        if (page.dataset.landing === 'true') return;
         entries.forEach((entry) => {
           if (entry.isIntersecting) entry.target.classList.add('is-visible');
         });
@@ -458,6 +505,33 @@ function initPlanetPages() {
     );
     page.querySelectorAll('.planet-section').forEach((section) => observer.observe(section));
   });
+}
+
+// The dive's shared math: the two scales compound (planet visual size =
+// rect.width * btnScale * sceneScale), solved so the planet's own surface
+// clears the farthest viewport corner with margin. Used by the landing
+// (zoom in) and, inverted, by the return trip (zoom out).
+function landingGeometry(btn) {
+  const rect = btn.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  const cover =
+    Math.hypot(Math.max(cx, window.innerWidth - cx), Math.max(cy, window.innerHeight - cy)) * 2;
+  const sceneScale = 3.2;
+  const btnScale = (cover * 1.15) / (rect.width * sceneScale);
+  return { cx, cy, sceneScale, btnScale };
+}
+
+// The galaxy chrome that fades for a dive (everything except the stars,
+// which stay up to streak past the camera, and the planet being flown at).
+function galaxyChrome(takeover, exceptBtn) {
+  return [
+    takeover.querySelector('[data-takeover-loader]'),
+    takeover.querySelector('.takeover__sunglow'),
+    takeover.querySelector('.orbit-path-svg'),
+    takeover.querySelector('[data-takeover-menu-cue]'),
+    ...[...takeover.querySelectorAll('.orbit-planet')].filter((p) => p !== exceptBtn),
+  ].filter(Boolean);
 }
 
 function openPlanetPage(takeover, btn) {
@@ -477,23 +551,26 @@ function openPlanetPage(takeover, btn) {
   page.scrollTop = 0;
   gsap.set(page, { opacity: 0 });
 
-  const fadeTargets = [
-    takeover.querySelector('[data-takeover-loader]'),
-    takeover.querySelector('.takeover__sunglow'),
-    takeover.querySelector('[data-takeover-particles]'),
-    takeover.querySelector('.orbit-path-svg'),
-    takeover.querySelector('[data-takeover-menu-cue]'),
-    ...[...takeover.querySelectorAll('.orbit-planet')].filter((p) => p !== btn),
-  ].filter(Boolean);
+  // Deliberately NOT the particle field: the stars stay up during the dive
+  // so the takeover-wide zoom streaks them outward past the camera — the
+  // warp is most of the "flying at the planet" feel.
+  const fadeTargets = galaxyChrome(takeover, btn);
 
   const finishOpen = () => {
     // The page is fully opaque now — quietly restore the galaxy behind it
     // so the return trip needs no rebuild...
     veil.hidden = true;
     veil.classList.remove(`planet-page--${name}`);
-    gsap.set(veil, { clearProps: 'clipPath' });
+    gsap.set(veil, { clearProps: 'opacity' });
+    gsap.set(takeover, { clearProps: 'transform,transformOrigin' });
     gsap.set(btn, { clearProps: 'transform' });
+    const label = btn.querySelector('.orbit-planet__label');
+    if (label) gsap.set(label, { clearProps: 'opacity' });
     gsap.set(fadeTargets, { opacity: 1 });
+    // Slide/blur land at identity values; clear them so the page element
+    // carries no leftover transform/filter while being read (a transformed
+    // scroll container would also re-anchor its fixed back button).
+    gsap.set(page, { clearProps: 'transform,filter' });
     // ...except the particle field: stop paying for its WebGL loop while
     // reading (recreated at full spread on the way back).
     if (particleField) {
@@ -502,74 +579,326 @@ function openPlanetPage(takeover, btn) {
     }
     activePlanetPage = { page, takeover, name };
     planetTransitionRunning = false;
+    planetOpenTl = null;
+    delete page.dataset.landing; // safety net; normally cleared at touchdown
+    // Scroll-driven FX need real layout — the page is visible now.
+    planetFxCtx = createPlanetScrollFX(page);
     page.focus({ preventScroll: true });
   };
 
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    gsap.to(page, { opacity: 1, duration: 0.4, ease: 'power1.out', onComplete: finishOpen });
+    planetOpenTl = gsap.to(page, { opacity: 1, duration: 0.4, ease: 'power1.out', onComplete: finishOpen });
     return;
   }
 
-  // Landing geometry: the veil's circle grows from the planet's on-screen
-  // center until it covers the farthest viewport corner.
-  const rect = btn.getBoundingClientRect();
-  const cx = rect.left + rect.width / 2;
-  const cy = rect.top + rect.height / 2;
-  const cover =
-    Math.hypot(Math.max(cx, window.innerWidth - cx), Math.max(cy, window.innerHeight - cy)) * 1.05;
+  // Landing geometry: the camera dives INTO the planet — the whole galaxy
+  // scene scales up around the planet's exact screen position while the
+  // planet itself rushes toward the lens until its own gradient fills the
+  // frame (it IS the covering surface; no clip-path fill).
+  const { cx, cy, sceneScale, btnScale } = landingGeometry(btn);
+
+  const blackout = veil.querySelector('[data-veil-blackout]');
+  const glow = veil.querySelector('[data-veil-glow]');
+  gsap.set([blackout, glow].filter(Boolean), { opacity: 0 });
+
+  // Strip stale section reveals so the content cascade plays AFTER
+  // touchdown — otherwise IntersectionObserver marks the first section
+  // visible the instant the page unhides (while still at opacity 0) and
+  // the stagger burns off unseen behind the blackout. The landing flag
+  // keeps the observer's async records from re-adding it (see
+  // initPlanetPages).
+  page.querySelectorAll('.planet-section.is-visible').forEach((s) => s.classList.remove('is-visible'));
+  page.dataset.landing = 'true';
 
   veil.classList.add(`planet-page--${name}`);
   veil.hidden = false;
+  gsap.set(veil, { opacity: 0, clearProps: 'clipPath' });
 
-  const tl = gsap.timeline({ onComplete: finishOpen });
-  tl.to(fadeTargets, { opacity: 0, duration: 0.45, ease: 'power1.out' }, 0);
-  // Approach: the planet swells as the "camera" closes in...
-  tl.to(btn, { scale: 5, duration: 1.05, ease: 'power2.in' }, 0);
-  // ...its atmosphere floods out from it...
-  tl.fromTo(
-    veil,
-    { clipPath: `circle(0px at ${cx}px ${cy}px)` },
-    { clipPath: `circle(${cover}px at ${cx}px ${cy}px)`, duration: 0.95, ease: 'power2.in' },
-    0.1
-  );
-  // ...and the page surfaces out of that atmosphere with a real zoom:
-  // it arrives oversized and settles to rest, reading as the final push
-  // down through the stratosphere onto the page.
+  const label = btn.querySelector('.orbit-planet__label');
+
+  // The landing, in three beats:
+  //   1. Dive (0–1.15s): the camera flies at the planet — the whole scene
+  //      zooms around the planet's position on the 'landing-dive' gravity
+  //      ease, stars streaking outward past the lens, until the planet's
+  //      own surface fills the frame. A flash of the destination's sky
+  //      palette (the veil) reads as hitting the atmosphere.
+  //   2. Entry burn (~1.2–2.15s): the atmosphere deepens to near-black and
+  //      holds ~1s of darkness; late in the burn the surface glow seeps up
+  //      from the bottom edge, hinting where the page will come from.
+  //   3. Touchdown (2.15–3.1s): the page slides up out of that glow,
+  //      sharpening from a soft blur as it settles; its content then
+  //      condenses into focus (the depth-of-field arrival in planets.css)
+  //      right after it lands.
+  const tl = gsap.timeline({
+    defaults: { duration: 1.15, ease: 'landing-dive' },
+    onComplete: finishOpen,
+  });
+  planetOpenTl = tl;
+  if (label) tl.set(label, { opacity: 0 }, 0); // hover label must not scale up with the planet
+  tl.to(fadeTargets, { opacity: 0, duration: 0.5, ease: 'power1.out' }, 0);
+  tl.to(takeover, { scale: sceneScale, transformOrigin: `${cx}px ${cy}px` }, 0);
+  tl.to(btn, { scale: btnScale }, 0);
+  tl.to(veil, { opacity: 1, duration: 0.35, ease: 'power1.inOut' }, 0.85);
+  if (blackout) tl.to(blackout, { opacity: 1, duration: 0.4, ease: 'power1.inOut' }, 1.2);
+  if (glow) tl.to(glow, { opacity: 0.45, duration: 0.55, ease: 'power1.inOut' }, 1.7);
+  // Slide + blur-in from the bottom. Opacity resolves fast (the black
+  // behind makes a slow fade read as murk); position and focus carry the
+  // motion. Strong ease-out, no bounce — "smoothly slides".
   tl.fromTo(
     page,
-    { opacity: 0, scale: 1.3 },
-    { opacity: 1, scale: 1, duration: 1.15, ease: 'power2.out' },
-    0.95
+    { yPercent: 9, filter: 'blur(14px)' },
+    { yPercent: 0, filter: 'blur(0px)', duration: 0.95, ease: 'power3.out' },
+    2.15
   );
+  tl.to(page, { opacity: 1, duration: 0.35, ease: 'power1.out' }, 2.15);
+  // Touchdown settled — release the observer gate and let the first
+  // section's content bloom, once the page's own slide-in blur is down to
+  // ~0.5px so the depth reveal plays on an already-sharp stage.
+  tl.call(() => {
+    delete page.dataset.landing;
+    const first = page.querySelector('.planet-section');
+    if (first) first.classList.add('is-visible');
+  }, [], 2.65);
 }
 
 function closePlanetPage() {
   if (!activePlanetPage || planetTransitionRunning) return;
-  const { page, takeover } = activePlanetPage;
+  const { page, takeover, name } = activePlanetPage;
   planetTransitionRunning = true;
 
-  // Re-arm the galaxy behind the page before revealing it: fresh particle
-  // field already at full spread (the burst happened long ago) and the
-  // orbit resumed from where it paused. Skipped under reduced motion,
-  // which never had a particle field to begin with.
-  if (!particleField && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  // Scroll FX first: their ScrollTriggers reference this page's scroller
+  // and must not survive into the hidden state.
+  if (planetFxCtx) {
+    planetFxCtx.revert();
+    planetFxCtx = null;
+  }
+
+  // Re-arm the star field before anything is revealed — the stars are up
+  // during the whole zoom-out, streaking back inward as the camera
+  // retreats. Skipped under reduced motion, which never had particles.
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!particleField && !reduceMotion) {
     prewarmParticles(takeover);
     if (particleField) particleField.setSpread(10);
   }
-  if (orbitSystem) orbitSystem.resume();
 
-  gsap.to(page, {
-    opacity: 0,
-    duration: 0.55,
-    ease: 'power1.inOut',
-    onComplete: () => {
-      page.hidden = true;
-      gsap.set(page, { clearProps: 'transform,opacity' });
-      activePlanetPage = null;
-      planetTransitionRunning = false;
-      setPlanetsEnabled(takeover, true);
+  const btn = takeover.querySelector(`[data-planet-target="${name}"]`);
+  const veil = document.querySelector('[data-planet-veil]');
+  const label = btn ? btn.querySelector('.orbit-planet__label') : null;
+  const chrome = galaxyChrome(takeover, btn);
+
+  const cleanup = () => {
+    page.hidden = true;
+    gsap.set(page, { clearProps: 'transform,opacity,filter' });
+    gsap.set(takeover, { clearProps: 'transform,transformOrigin' });
+    if (btn) gsap.set(btn, { clearProps: 'transform' });
+    if (label) gsap.set(label, { clearProps: 'opacity' });
+    // Hard-set, not clearProps: the sun ball and menu cue are opacity:0 in
+    // CSS by default and were only ever made visible by one-time inline
+    // GSAP tweens during ignition (startTakeover) — clearing "opacity"
+    // here would strip that inline value and drop them back to their
+    // hidden CSS resting state instead of "lit", vanishing the sun and cue.
+    gsap.set(chrome, { opacity: 1 });
+    if (veil) {
+      veil.hidden = true;
+      veil.classList.remove(`planet-page--${name}`);
+      gsap.set(veil, { clearProps: 'opacity' });
+    }
+    // Resume only now — the zoom-out's origin must stay glued to the
+    // planet's (paused) position for the whole retreat.
+    if (orbitSystem) orbitSystem.resume();
+    activePlanetPage = null;
+    planetTransitionRunning = false;
+    setPlanetsEnabled(takeover, true);
+  };
+
+  if (reduceMotion) {
+    if (orbitSystem) orbitSystem.resume();
+    gsap.to(page, { opacity: 0, duration: 0.45, ease: 'power1.inOut', onComplete: cleanup });
+    return;
+  }
+
+  // The landing dive, reversed: park the camera back INSIDE the planet
+  // (scene + planet pre-scaled around the planet's current position,
+  // atmosphere veil up, chrome hidden), then — as the page lifts away —
+  // launch back out on the mirror ease: the planet shrinks from
+  // frame-filling back to its dot in orbit, stars rushing inward, sun and
+  // menu fading back up. Exit is still shorter than the entry.
+  if (btn) {
+    const { cx, cy, sceneScale, btnScale } = landingGeometry(btn);
+    gsap.set(takeover, { scale: sceneScale, transformOrigin: `${cx}px ${cy}px` });
+    gsap.set(btn, { scale: btnScale });
+  }
+  if (label) gsap.set(label, { opacity: 0 });
+  gsap.set(chrome, { opacity: 0 });
+  if (veil) {
+    veil.classList.add(`planet-page--${name}`);
+    veil.hidden = false;
+    gsap.set(veil, { opacity: 1, clearProps: 'clipPath' });
+    gsap.set(
+      [veil.querySelector('[data-veil-blackout]'), veil.querySelector('[data-veil-glow]')].filter(Boolean),
+      { opacity: 0 }
+    );
+  }
+
+  const tl = gsap.timeline({ onComplete: cleanup });
+  // 1. The page lifts away (mirror of the touchdown slide).
+  tl.to(page, { yPercent: 10, opacity: 0, filter: 'blur(12px)', duration: 0.55, ease: 'power2.in' }, 0);
+  // 2. The atmosphere flash clears...
+  if (veil) tl.to(veil, { opacity: 0, duration: 0.4, ease: 'power1.inOut' }, 0.45);
+  // 3. ...and the camera launches back out to orbit distance.
+  tl.to(takeover, { scale: 1, duration: 1.2, ease: 'orbit-return' }, 0.5);
+  if (btn) tl.to(btn, { scale: 1, duration: 1.2, ease: 'orbit-return' }, 0.5);
+  // 4. Galaxy chrome fades back up as the orbit view returns.
+  tl.to(chrome, { opacity: 1, duration: 0.6, ease: 'power1.out' }, 1.1);
+}
+
+// ——— Pull-to-return (all planet pages) ————————————————————————————————
+// At the top of a page, continuing to scroll up rubber-bands the whole
+// page downward (rising resistance, Apple-style — no hard wall) while the
+// return cue's line stretches as the gesture's gauge. Pull far enough and
+// it releases into the lift-off; let go early and it springs back.
+
+const RETURN_PULL_THRESHOLD = 380; // accumulated wheel/touch px
+
+function createReturnPull(page) {
+  const cueLine = page.querySelector('[data-return-cue] i');
+  const yTo = gsap.quickTo(page, 'y', { duration: 0.3, ease: 'power2.out' });
+  const lineTo = cueLine ? gsap.quickTo(cueLine, 'scaleY', { duration: 0.3, ease: 'power2.out' }) : null;
+  let pull = 0;
+
+  const relax = () => {
+    if (!pull) return;
+    pull = 0;
+    yTo(0);
+    if (lineTo) lineTo(1);
+  };
+
+  Observer.create({
+    target: page,
+    type: 'wheel,touch',
+    onChangeY(self) {
+      if (!activePlanetPage || activePlanetPage.page !== page || planetTransitionRunning) return;
+      if (page.scrollTop <= 1 && self.deltaY < 0) {
+        pull += -self.deltaY;
+        // Rubber band: displacement approaches ~110px asymptotically —
+        // the further you pull, the less it gives.
+        yTo(110 * (1 - 1 / (1 + pull / 260)));
+        if (lineTo) lineTo(1 + Math.min(pull / 180, 1.6));
+        if (pull >= RETURN_PULL_THRESHOLD) {
+          pull = 0;
+          if (lineTo) lineTo(1);
+          closePlanetPage();
+        }
+      } else {
+        relax();
+      }
     },
+    onStop: relax,
   });
+}
+
+// ——— Scroll-driven page FX ————————————————————————————————————————————
+// Created when a page finishes landing, reverted on lift-off. Everything
+// scrubs against the page's own scroller (these overlays scroll
+// themselves, not the window). All pages get the return-cue fade;
+// Projects gets the full descent choreography.
+
+let planetFxCtx = null;
+
+function createPlanetScrollFX(page) {
+  const sections = gsap.utils.toArray(page.querySelectorAll('.planet-section'));
+  if (!sections.length) return null;
+
+  return gsap.context(() => {
+    // Return cue bows out as soon as the descent starts, comes back at top.
+    const cue = page.querySelector('[data-return-cue]');
+    if (cue) {
+      gsap.to(cue, {
+        autoAlpha: 0,
+        ease: 'none',
+        scrollTrigger: { scroller: page, trigger: sections[0], start: 'top top', end: '+=220', scrub: true },
+      });
+    }
+
+    if (page.dataset.planetPage !== 'projects') return;
+
+    const descentTrack = page.querySelector('[data-descent-track]');
+    if (!descentTrack) return;
+
+    // The descent, as one scrubbed timeline (1 unit per stage): the three
+    // full-viewport layers blur-DISSOLVE into each other — the same
+    // defocus/refocus language as the hero's portrait crossfades — instead
+    // of a panel physically sliding over. Within each boundary the
+    // outgoing stage defocuses and fades while the incoming one sharpens
+    // into focus; the incoming backdrop settles from a slightly deeper
+    // frame, and the stage's items cascade up right after focus lands.
+    const maxBlur = 16;
+    const fade = 0.5; // crossfade width in stage units
+
+    gsap.set(sections.slice(1), { autoAlpha: 0 });
+
+    const tl = gsap.timeline({
+      defaults: { ease: 'power1.inOut' },
+      scrollTrigger: {
+        scroller: page,
+        trigger: descentTrack,
+        start: 'top top',
+        end: 'bottom bottom',
+        scrub: 0.6,
+      },
+    });
+
+    sections.forEach((section, i) => {
+      const bg = section.querySelector('[data-section-bg]');
+      const items = section.querySelectorAll('[data-fx-item]');
+      if (i > 0) {
+        const p = i - fade / 2; // boundary crossfade start
+        const prev = sections[i - 1];
+        tl.fromTo(prev, { filter: 'blur(0px)' }, { filter: `blur(${maxBlur}px)`, duration: fade }, p);
+        tl.to(prev, { autoAlpha: 0, duration: fade }, p);
+        tl.fromTo(section, { filter: `blur(${maxBlur}px)` }, { filter: 'blur(0px)', duration: fade }, p);
+        tl.to(section, { autoAlpha: 1, duration: fade }, p);
+        if (bg) tl.fromTo(bg, { scale: 1.1 }, { scale: 1, duration: fade * 1.6, ease: 'power1.out' }, p);
+        if (items.length) {
+          tl.fromTo(
+            items,
+            { autoAlpha: 0, y: 60 },
+            { autoAlpha: 1, y: 0, duration: 0.3, stagger: 0.06, ease: 'power1.out' },
+            p + fade * 0.55
+          );
+        }
+      }
+    });
+    // Pad the timeline to exactly 3 stage-units so each stage owns an
+    // equal share of the track's scroll distance.
+    tl.set({}, {}, sections.length);
+
+    // Descent gauge: the marker rides the track with total progress; the
+    // stage label swaps as each atmospheric layer is reached.
+    const marker = page.querySelector('[data-gauge-marker]');
+    const stage = page.querySelector('[data-gauge-stage]');
+    const gaugeTrack = page.querySelector('.planet-page__gauge-track');
+    if (marker && stage && gaugeTrack) {
+      const stages = ['Stratosphere', 'Clouds', 'Land'];
+      let current = 0;
+      ScrollTrigger.create({
+        scroller: page,
+        trigger: descentTrack,
+        start: 'top top',
+        end: 'bottom bottom',
+        onUpdate(self) {
+          gsap.set(marker, { y: self.progress * (gaugeTrack.clientHeight - marker.offsetHeight) });
+          const idx = self.progress < 0.4 ? 0 : self.progress < 0.9 ? 1 : 2;
+          if (idx !== current) {
+            current = idx;
+            stage.textContent = stages[idx];
+            gsap.fromTo(stage, { autoAlpha: 0.2 }, { autoAlpha: 1, duration: 0.45, ease: 'power1.out' });
+          }
+        },
+      });
+    }
+  }, page);
 }
 
 function initReveals() {

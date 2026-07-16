@@ -34,6 +34,13 @@
   --color-border: rgba(245, 244, 240, 0.1);
   --color-border-strong: rgba(245, 244, 240, 0.18);
 
+  /* Liquid glass material (see .liquid-glass in base.css) */
+  --glass-tint: rgba(255, 255, 255, 0.05);
+  --glass-tint-strong: rgba(255, 255, 255, 0.11);
+  --glass-edge: rgba(255, 255, 255, 0.16);
+  --glass-highlight: rgba(255, 255, 255, 0.28);
+  --glass-blur: 18px;
+
   /* Typography */
   --font-display: 'Fraunces', 'Iowan Old Style', serif;
   --font-nameplate: 'Anton', 'Archivo Black', sans-serif;

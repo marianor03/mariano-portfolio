@@ -70,7 +70,19 @@
       "Bash(file public/images/planets/projects/originals/*)",
       "Bash(python -c ' *)",
       "Bash(node projects-scenery-check.mjs)",
-      "Bash(node overlap-zoom-check.mjs)"
+      "Bash(node overlap-zoom-check.mjs)",
+      "Bash(node zoom-second-pass-diff.mjs)",
+      "Bash(node zoom-stale-state-check.mjs)",
+      "Bash(node loop-count-2-check.mjs)",
+      "Bash(node motion-improvements-check.mjs)",
+      "Bash(node landing-sequence-check.mjs)",
+      "Bash(node dof-reveal-check.mjs)",
+      "Bash(node dof-visibility-diag.mjs)",
+      "Bash(node dive-landing-check.mjs)",
+      "Bash(node projects-redesign-check.mjs)",
+      "Bash(node rd-title-recheck.mjs)",
+      "Bash(node glass-return-crossfade-check.mjs)",
+      "Bash(node bugfix-check.mjs)"
     ],
     "additionalDirectories": [
       "d:\\Repositories\\mariano-portfolio\\public\\images\\planets\\projects"

@@ -74,19 +74,52 @@
   pointer-events: auto;
 }
 
+/* The sphere texture is rendered at 4x size and scaled down to 0.25 at
+   rest: the landing dive scales the button up ~15-20x, and a raster
+   painted at the planet's tiny on-screen size upscales into jagged,
+   stair-stepped edges mid-dive. Painting 4x dense cuts that upscale
+   factor to a quarter — smooth edges all the way into the atmosphere.
+   (Margins in % resolve against the inline size; the planet is square,
+   so -200% centers the 400% box on both axes.) */
 .orbit-planet::before {
   content: '';
   position: absolute;
-  inset: 0;
+  left: 50%;
+  top: 50%;
+  width: 400%;
+  height: 400%;
+  margin: -200% 0 0 -200%;
   border-radius: 50%;
   background: var(--planet-gradient);
-  box-shadow: inset -5px -6px 10px rgba(0, 0, 0, 0.4);
-  transition: transform 0.35s var(--ease-premium);
+  box-shadow: inset -20px -24px 40px rgba(0, 0, 0, 0.4);
+  transform: scale(0.25);
+  /* Own compositor layer, or the 4x-dense paint gets flattened into the
+     button's layer at final drawn size and the density is lost. Four tiny
+     (~200px) extra layers — negligible memory. */
+  will-change: transform;
+  /* 180ms (was 350ms): hover growth on the site's main nav needs to feel
+     immediate, and the same transition carries the press feedback below,
+     which budgets even tighter. */
+  transition: transform 180ms var(--ease-premium);
 }
 
-.orbit-planet:hover:not(:disabled)::before,
+/* Hover motion gated to real pointers — touch fires false hovers on tap.
+   :focus-visible stays ungated so keyboard users get the same affordance.
+   (Scales are the rest-state 0.25 times the intended visual factor.) */
+@media (hover: hover) and (pointer: fine) {
+  .orbit-planet:hover:not(:disabled)::before {
+    transform: scale(0.295); /* 1.18x visual */
+  }
+}
+
 .orbit-planet:focus-visible::before {
-  transform: scale(1.18);
+  transform: scale(0.295); /* 1.18x visual */
+}
+
+/* Press feedback: the sphere gives under the pointer — instant confirmation
+   the click registered before the landing cinematic starts. */
+.orbit-planet:active:not(:disabled)::before {
+  transform: scale(0.2625); /* 1.05x visual */
 }
 
 .orbit-planet:focus-visible {
@@ -104,14 +137,22 @@
   font-size: var(--text-xs);
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
-  color: var(--color-text-muted);
+  color: var(--color-text);
   white-space: nowrap;
   opacity: 0;
-  transition: opacity 0.3s var(--ease-premium);
+  transition: opacity 180ms var(--ease-premium);
   pointer-events: none;
+  /* Liquid-glass pill (class in markup); full ink for vibrancy. */
+  padding: 0.45em 0.95em;
+  border-radius: 999px;
 }
 
-.orbit-planet:hover:not(:disabled) .orbit-planet__label,
+@media (hover: hover) and (pointer: fine) {
+  .orbit-planet:hover:not(:disabled) .orbit-planet__label {
+    opacity: 1;
+  }
+}
+
 .orbit-planet:focus-visible .orbit-planet__label {
   opacity: 1;
 }

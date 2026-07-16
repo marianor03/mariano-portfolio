@@ -40,15 +40,16 @@
 /* ————————————————————————————————————————————————————————————————
    Gooey blob loader — ported from uiverse.io (Nawsome). Structure and
    keyframes kept intact apart from: recolored to the site palette
-   (off-white blobs on the near-black canvas), the cycle retimed to fit
-   exactly 3 loops into the 5s window the loader is shown for (main.js'
-   runDuration), and animations held paused until main.js adds
-   .is-running / frozen at the small static ball once .is-settled.
+   (off-white blobs on the near-black canvas), the cycle retimed to a
+   1.667s pace (5s/3, from the loader's original tuning), and animations
+   held paused until main.js adds .is-running / frozen at the small
+   static ball once .is-settled.
 
-   --loop is the single source of truth for one cycle's length — keep it
-   in sync with main.js' `runDuration / loopCount`. Delays are expressed
-   as fractions of --loop so the stagger's relative look is preserved if
-   the loop speed ever changes again. */
+   --loop is the single source of truth for one cycle's PACE — how long
+   one loop takes, independent of how many main.js decides to wait
+   through before settling (main.js' loopCount * loopDuration, currently
+   2 loops ≈ 3.33s on-screen). Delays are expressed as fractions of --loop
+   so the stagger's relative look is preserved if the pace ever changes. */
 
 .takeover .blobs {
   --loop: calc(5s / 3);
@@ -339,4 +340,8 @@
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   color: var(--color-accent);
+  /* Liquid-glass pill (class in markup). */
+  align-self: flex-start;
+  padding: 0.5em 1.1em;
+  border-radius: 999px;
 }
