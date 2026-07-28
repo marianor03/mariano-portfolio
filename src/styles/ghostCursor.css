@@ -1,0 +1,19 @@
+/* Vanilla port of the React Bits GhostCursor styles (reactbits.dev). Mount
+   sits above the section's backdrop art and below its text content
+   (the content has its own explicit z-index: var(--z-raised), so DOM
+   order here doesn't matter for stacking). Purely decorative — ghostCursor.js
+   tracks the pointer via a window-level listener with manual bounds-
+   checking, not hit-testing, so this never needs to be interactive. */
+.ghost-cursor-mount {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.ghost-cursor-mount > canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+}

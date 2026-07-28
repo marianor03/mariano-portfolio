@@ -1,0 +1,30 @@
+/* Vanilla port of the React Bits RotatingText styles (reactbits.dev). */
+.rotating-text {
+  display: inline-flex;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+
+.rotating-text__visible {
+  display: inline-flex;
+  flex-wrap: wrap;
+}
+
+.rotating-text__word {
+  display: inline-flex;
+}
+
+.rotating-text__char {
+  display: inline-block;
+  will-change: transform, opacity;
+}
+
+.rotating-text__space {
+  white-space: pre;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rotating-text__char {
+    will-change: auto;
+  }
+}

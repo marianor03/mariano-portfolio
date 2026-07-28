@@ -3,16 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>Mariano Regalado — Full-Stack Developer</title>
+    <title>Mariano Regalado, Full-Stack Developer</title>
     <meta
       name="description"
-      content="Mariano Regalado — full-stack and front-end developer. React, Python, JavaScript, Tailwind."
+      content="Mariano Regalado, full-stack and front-end developer. React, Python, JavaScript, Tailwind."
     />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Anton&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Anton&family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
 
@@ -25,6 +25,9 @@
     <link rel="stylesheet" href="/src/styles/takeover.css" />
     <link rel="stylesheet" href="/src/styles/orbit.css" />
     <link rel="stylesheet" href="/src/styles/planets.css" />
+    <link rel="stylesheet" href="/src/styles/logoLoop.css" />
+    <link rel="stylesheet" href="/src/styles/ghostCursor.css" />
+    <link rel="stylesheet" href="/src/styles/rotatingText.css" />
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to main content</a>
@@ -68,9 +71,14 @@
             <span class="hero__nameplate-fill">Regalado.</span>
           </h1>
 
+          <p class="hero__hook">
+            <span>I build</span>
+            <span class="hero__hook-rotate" data-rotating-text aria-label="what I build"></span>
+          </p>
+
           <div class="hero__meta">
             <p class="hero__meta-line" data-hero-beat>
-              Full-stack developer <span class="hero__meta-dot" aria-hidden="true"></span> React · Python · JavaScript
+              Full-stack developer <span class="hero__meta-dot" aria-hidden="true"></span> React, Python, JavaScript
             </p>
             <p class="hero__meta-line" data-hero-beat>
               Design-minded engineering <span class="hero__meta-dot" aria-hidden="true"></span> Tailwind-driven interfaces
@@ -358,33 +366,70 @@
         <i></i>
         <span class="liquid-glass">Scroll up to return to orbit</span>
       </div>
-      <section class="planet-section planet-section--stratosphere">
-        <div class="planet-section__content">
-          <p class="planet-section__eyebrow">Stratosphere</p>
-          <h2 class="planet-page__title">About</h2>
-          <p class="planet-section__text">
-            Placeholder — breaking into the About planet's upper atmosphere. A short
-            personal intro line will live here.
-          </p>
+      <div class="planet-page__gauge liquid-glass" aria-hidden="true">
+        <span class="planet-page__gauge-stage" data-gauge-stage>Stratosphere</span>
+        <div class="planet-page__gauge-track">
+          <i class="planet-page__gauge-marker" data-gauge-marker></i>
         </div>
-      </section>
-      <section class="planet-section planet-section--clouds">
-        <div class="planet-section__content">
-          <p class="planet-section__eyebrow">Clouds</p>
-          <p class="planet-section__text">
-            Placeholder — descending through the cloud layer. The story of how Mariano
-            works goes here.
-          </p>
+      </div>
+
+      <!-- Aurora wash — About's unique layer: a soft borealis band that
+           drifts and intensifies with the descent (scrubbed in main.js). -->
+      <div class="planet-page__aurora" data-aurora aria-hidden="true"></div>
+
+      <div class="planet-page__track" data-descent-track>
+        <div class="planet-page__stage">
+          <section class="planet-section planet-section--stratosphere">
+            <div class="planet-section__bg" data-section-bg aria-hidden="true"></div>
+            <div class="planet-section__content">
+              <p class="planet-section__eyebrow">The person</p>
+              <h2 class="planet-page__title planet-page__title--display">About</h2>
+              <p class="planet-section__text planet-section__text--lede">
+                Placeholder. Descending toward the ice jungle. A one-line introduction
+                to who Mariano is will live here.
+              </p>
+            </div>
+          </section>
+
+          <section class="planet-section planet-section--clouds planet-section--fx">
+            <div class="planet-section__bg" data-section-bg aria-hidden="true"></div>
+            <div class="ghost-cursor-mount" data-ghost-cursor aria-hidden="true"></div>
+            <div class="planet-section__content planet-section__content--wide about-story-layout">
+              <p class="about-story__statement" data-fx-item>
+                Placeholder. Bio paragraph one. A short, specific story about
+                how Mariano <em>works</em> and what he's drawn to.
+              </p>
+              <div class="about-story liquid-glass liquid-glass--frost" data-fx-item>
+                <span class="about-story__mark" aria-hidden="true">02</span>
+                <p class="about-story__text">
+                  Placeholder. A second short beat: background, what led into
+                  development, what's distinctive about the approach.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section class="planet-section planet-section--land planet-section--fx">
+            <div class="planet-section__bg" data-section-bg aria-hidden="true"></div>
+            <div class="planet-section__content planet-section__content--wide">
+              <dl class="about-facts">
+                <div class="about-fact liquid-glass liquid-glass--frost" data-fx-item>
+                  <dt>Based in</dt>
+                  <dd>Placeholder City</dd>
+                </div>
+                <div class="about-fact liquid-glass liquid-glass--frost" data-fx-item>
+                  <dt>Focus</dt>
+                  <dd>Front-end &amp; full-stack</dd>
+                </div>
+                <div class="about-fact liquid-glass liquid-glass--frost" data-fx-item>
+                  <dt>Currently</dt>
+                  <dd>Open to opportunities</dd>
+                </div>
+              </dl>
+            </div>
+          </section>
         </div>
-      </section>
-      <section class="planet-section planet-section--land">
-        <div class="planet-section__content">
-          <p class="planet-section__eyebrow">Land</p>
-          <p class="planet-section__text">
-            Placeholder — touchdown. The real About content lands here.
-          </p>
-        </div>
-      </section>
+      </div>
     </div>
 
     <!-- PROJECTS — redesigned: parallax backdrop layers (data-section-bg),
@@ -416,10 +461,10 @@
       <section class="planet-section planet-section--stratosphere">
         <div class="planet-section__bg" data-section-bg aria-hidden="true"></div>
         <div class="planet-section__content">
-          <p class="planet-section__eyebrow">Stratosphere — selected work</p>
+          <p class="planet-section__eyebrow">Selected work</p>
           <h2 class="planet-page__title planet-page__title--display">Projects</h2>
           <p class="planet-section__text planet-section__text--lede">
-            Placeholder — entering the Projects planet. Three featured builds wait in
+            Placeholder. Entering the Projects planet. Three featured builds wait in
             the clouds; the full archive is down on the surface.
           </p>
         </div>
@@ -427,14 +472,14 @@
 
       <section class="planet-section planet-section--clouds planet-section--fx">
         <div class="planet-section__bg" data-section-bg aria-hidden="true"></div>
+        <div class="ghost-cursor-mount" data-ghost-cursor aria-hidden="true"></div>
         <div class="planet-section__content planet-section__content--wide">
-          <p class="planet-section__eyebrow" data-fx-item>Clouds — featured</p>
           <ul class="project-strips">
             <li class="project-strip liquid-glass" data-fx-item>
               <span class="project-strip__index" aria-hidden="true">01</span>
               <span class="project-strip__body">
                 <span class="project-strip__name">Project One</span>
-                <span class="project-strip__desc">Placeholder — one line on what it does and why it mattered.</span>
+                <span class="project-strip__desc">Placeholder. One line on what it does and why it mattered.</span>
               </span>
               <span class="project-strip__tags">React · Tailwind</span>
             </li>
@@ -442,7 +487,7 @@
               <span class="project-strip__index" aria-hidden="true">02</span>
               <span class="project-strip__body">
                 <span class="project-strip__name">Project Two</span>
-                <span class="project-strip__desc">Placeholder — one line on what it does and why it mattered.</span>
+                <span class="project-strip__desc">Placeholder. One line on what it does and why it mattered.</span>
               </span>
               <span class="project-strip__tags">Python · API</span>
             </li>
@@ -450,7 +495,7 @@
               <span class="project-strip__index" aria-hidden="true">03</span>
               <span class="project-strip__body">
                 <span class="project-strip__name">Project Three</span>
-                <span class="project-strip__desc">Placeholder — one line on what it does and why it mattered.</span>
+                <span class="project-strip__desc">Placeholder. One line on what it does and why it mattered.</span>
               </span>
               <span class="project-strip__tags">JavaScript · Full-stack</span>
             </li>
@@ -461,7 +506,6 @@
       <section class="planet-section planet-section--land planet-section--fx">
         <div class="planet-section__bg" data-section-bg aria-hidden="true"></div>
         <div class="planet-section__content planet-section__content--wide">
-          <p class="planet-section__eyebrow" data-fx-item>Land — the archive</p>
           <ul class="project-index">
             <li class="project-index__row" data-fx-item>
               <span class="project-index__num" aria-hidden="true">04</span>
@@ -502,33 +546,74 @@
         <i></i>
         <span class="liquid-glass">Scroll up to return to orbit</span>
       </div>
-      <section class="planet-section planet-section--stratosphere">
-        <div class="planet-section__content">
-          <p class="planet-section__eyebrow">Stratosphere</p>
-          <h2 class="planet-page__title">Skills</h2>
-          <p class="planet-section__text">
-            Placeholder — entering the Skills planet's upper atmosphere. The toolkit
-            overview will live here.
-          </p>
+      <div class="planet-page__gauge liquid-glass" aria-hidden="true">
+        <span class="planet-page__gauge-stage" data-gauge-stage>Stratosphere</span>
+        <div class="planet-page__gauge-track">
+          <i class="planet-page__gauge-marker" data-gauge-marker></i>
         </div>
-      </section>
-      <section class="planet-section planet-section--clouds">
-        <div class="planet-section__content">
-          <p class="planet-section__eyebrow">Clouds</p>
-          <p class="planet-section__text">
-            Placeholder — descending through the cloud layer. Frontend / backend /
-            tooling groups go here.
-          </p>
+      </div>
+
+      <div class="planet-page__track" data-descent-track>
+        <div class="planet-page__stage">
+          <section class="planet-section planet-section--stratosphere">
+            <div class="planet-section__bg" data-section-bg aria-hidden="true"></div>
+            <div class="planet-section__content">
+              <p class="planet-section__eyebrow">The toolkit</p>
+              <h2 class="planet-page__title planet-page__title--display">Skills</h2>
+              <p class="planet-section__text planet-section__text--lede">
+                Placeholder. Descending toward the mineral caverns. A one-line
+                overview of the toolkit will live here.
+              </p>
+            </div>
+          </section>
+
+          <section class="planet-section planet-section--clouds planet-section--fx">
+            <div class="planet-section__bg" data-section-bg aria-hidden="true"></div>
+            <div class="ghost-cursor-mount" data-ghost-cursor aria-hidden="true"></div>
+            <div class="planet-section__content planet-section__content--wide">
+              <dl class="about-facts">
+                <div class="about-fact liquid-glass liquid-glass--frost" data-fx-item>
+                  <dt>Frontend</dt>
+                  <dd>JavaScript, React, HTML5, CSS3, Tailwind CSS</dd>
+                </div>
+                <div class="about-fact liquid-glass liquid-glass--frost" data-fx-item>
+                  <dt>Backend</dt>
+                  <dd>Python</dd>
+                </div>
+                <div class="about-fact liquid-glass liquid-glass--frost" data-fx-item>
+                  <dt>Tooling</dt>
+                  <dd>Git, Vite</dd>
+                </div>
+              </dl>
+            </div>
+          </section>
+
+          <section class="planet-section planet-section--land planet-section--fx">
+            <div class="planet-section__bg" data-section-bg aria-hidden="true"></div>
+            <div class="planet-section__content planet-section__content--wide">
+              <dl class="about-facts">
+                <div class="about-fact liquid-glass liquid-glass--frost" data-fx-item>
+                  <dt>Shipped</dt>
+                  <dd>Placeholder project</dd>
+                </div>
+                <div class="about-fact liquid-glass liquid-glass--frost" data-fx-item>
+                  <dt>Proud of</dt>
+                  <dd>Placeholder highlight</dd>
+                </div>
+                <div class="about-fact liquid-glass liquid-glass--frost" data-fx-item>
+                  <dt>Currently</dt>
+                  <dd>Placeholder focus</dd>
+                </div>
+              </dl>
+
+              <div class="about-skills liquid-glass liquid-glass--frost" data-fx-item>
+                <p class="about-skills__label">Languages &amp; tools</p>
+                <div class="logo-loop-wrap" data-logo-loop aria-label="Languages and tools I use"></div>
+              </div>
+            </div>
+          </section>
         </div>
-      </section>
-      <section class="planet-section planet-section--land">
-        <div class="planet-section__content">
-          <p class="planet-section__eyebrow">Land</p>
-          <p class="planet-section__text">
-            Placeholder — touchdown. Proof-of-skill highlights land here.
-          </p>
-        </div>
-      </section>
+      </div>
     </div>
 
     <div
@@ -543,34 +628,65 @@
         <i></i>
         <span class="liquid-glass">Scroll up to return to orbit</span>
       </div>
-      <section class="planet-section planet-section--stratosphere">
-        <div class="planet-section__content">
-          <p class="planet-section__eyebrow">Stratosphere</p>
-          <h2 class="planet-page__title">Contact</h2>
-          <p class="planet-section__text">
-            Placeholder — entering the Contact planet's upper atmosphere. A short
-            invitation to reach out will live here.
-          </p>
+      <div class="planet-page__gauge liquid-glass" aria-hidden="true">
+        <span class="planet-page__gauge-stage" data-gauge-stage>Stratosphere</span>
+        <div class="planet-page__gauge-track">
+          <i class="planet-page__gauge-marker" data-gauge-marker></i>
         </div>
-      </section>
-      <section class="planet-section planet-section--clouds">
-        <div class="planet-section__content">
-          <p class="planet-section__eyebrow">Clouds</p>
-          <p class="planet-section__text">
-            Placeholder — descending through the cloud layer. Email / GitHub / LinkedIn
-            links go here.
-          </p>
+      </div>
+
+      <div class="planet-page__track" data-descent-track>
+        <div class="planet-page__stage">
+          <section class="planet-section planet-section--stratosphere">
+            <div class="planet-section__bg" data-section-bg aria-hidden="true"></div>
+            <div class="planet-section__content">
+              <p class="planet-section__eyebrow">Say hello</p>
+              <h2 class="planet-page__title planet-page__title--display">Contact</h2>
+              <p class="planet-section__text planet-section__text--lede">
+                Placeholder. Descending through the ember haze. A short invitation
+                to reach out will live here.
+              </p>
+            </div>
+          </section>
+
+          <section class="planet-section planet-section--clouds planet-section--fx">
+            <div class="planet-section__bg" data-section-bg aria-hidden="true"></div>
+            <div class="ghost-cursor-mount" data-ghost-cursor aria-hidden="true"></div>
+            <div class="planet-section__content">
+              <p class="planet-section__text planet-section__text--lede" data-fx-item>
+                Placeholder. A single, direct line inviting a message will live
+                here.
+              </p>
+            </div>
+          </section>
+
+          <section class="planet-section planet-section--land planet-section--fx">
+            <div class="planet-section__bg" data-section-bg aria-hidden="true"></div>
+            <div class="planet-section__content planet-section__content--wide">
+              <ul class="contact-links">
+                <li>
+                  <a class="contact-link liquid-glass liquid-glass--frost" href="#" data-fx-item>
+                    <span class="contact-link__label">Email</span>
+                    <span class="contact-link__value">Placeholder</span>
+                  </a>
+                </li>
+                <li>
+                  <a class="contact-link liquid-glass liquid-glass--frost" href="#" data-fx-item>
+                    <span class="contact-link__label">GitHub</span>
+                    <span class="contact-link__value">Placeholder</span>
+                  </a>
+                </li>
+                <li>
+                  <a class="contact-link liquid-glass liquid-glass--frost" href="#" data-fx-item>
+                    <span class="contact-link__label">LinkedIn</span>
+                    <span class="contact-link__value">Placeholder</span>
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </section>
         </div>
-      </section>
-      <section class="planet-section planet-section--land">
-        <div class="planet-section__content">
-          <p class="planet-section__eyebrow">Land</p>
-          <p class="planet-section__text">
-            Placeholder — touchdown. The contact form (or a big friendly email link)
-            lands here.
-          </p>
-        </div>
-      </section>
+      </div>
     </div>
 
     <script type="module" src="/src/main.js"></script>

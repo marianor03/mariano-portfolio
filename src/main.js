@@ -4,6 +4,15 @@ import { CustomEase } from 'gsap/CustomEase';
 import { Observer } from 'gsap/Observer';
 import { initParticles } from './particles.js';
 import { initOrbit } from './orbit.js';
+import { initLogoLoop } from './logoLoop.js';
+import { initRotatingText } from './rotatingText.js';
+import svgJavaScript from './icons/javascript.svg?raw';
+import svgPython from './icons/python.svg?raw';
+import svgReact from './icons/react.svg?raw';
+import svgTailwind from './icons/tailwindcss.svg?raw';
+import svgHtml5 from './icons/html5.svg?raw';
+import svgCss3 from './icons/css3.svg?raw';
+import svgGit from './icons/git.svg?raw';
 
 gsap.registerPlugin(ScrollTrigger, CustomEase, Observer);
 
@@ -18,11 +27,25 @@ CustomEase.create('orbit-return', 'M0,0 C0.06,0.2 0.15,0.5 0.32,0.72 0.5,0.92 0.
 initHero();
 initReveals();
 initScrollCueActivity();
+initPlanetArt();
 initPlanetPages();
 
 function initHero() {
   const hero = document.querySelector('[data-hero]');
   if (!hero) return;
+
+  // Independent of the scroll-scrubbed portrait sequence below — starts
+  // rotating the instant the page loads, so there's motion to notice
+  // before a recruiter has scrolled or interacted at all.
+  const rotatingHook = hero.querySelector('[data-rotating-text]');
+  if (rotatingHook) {
+    initRotatingText(rotatingHook, [
+      'interfaces that feel alive',
+      'products people enjoy using',
+      'the vibe of a brand in motion',
+      'EXPERIENCES',
+    ]);
+  }
 
   const frames = gsap.utils.toArray(hero.querySelectorAll('[data-hero-frame]'));
   const images = gsap.utils.toArray(hero.querySelectorAll('[data-hero-image]'));
@@ -452,6 +475,40 @@ function resetTakeover(takeover) {
 let activePlanetPage = null;
 let planetTransitionRunning = false;
 let planetOpenTl = null;
+let logoLoopInstance = null;
+let ghostCursorInstance = null;
+
+const SKILL_ICONS = [
+  { svg: svgJavaScript, label: 'JavaScript' },
+  { svg: svgPython, label: 'Python' },
+  { svg: svgReact, label: 'React' },
+  { svg: svgTailwind, label: 'Tailwind CSS' },
+  { svg: svgHtml5, label: 'HTML5' },
+  { svg: svgCss3, label: 'CSS3' },
+  { svg: svgGit, label: 'Git' },
+];
+
+// Sets each planet section's --section-photo custom property at runtime
+// via import.meta.env.BASE_URL, instead of a static CSS url('/images/...')
+// — see the comment on the Projects rules in planets.css for why: Vite's
+// dev server proved unreliable at rewriting root-absolute CSS url()s for
+// this project's GitHub Pages base path, resolving byte-identical
+// declarations inconsistently within the same file. BASE_URL substitution
+// is plain string interpolation, not asset-pipeline URL resolution, so it
+// doesn't share that failure mode. Naming convention:
+// images/planets/<planet>/<stratosphere|clouds|land>.jpg
+function initPlanetArt() {
+  const base = import.meta.env.BASE_URL;
+  document.querySelectorAll('[data-planet-page]').forEach((page) => {
+    const planet = page.dataset.planetPage;
+    page.querySelectorAll('.planet-section [data-section-bg]').forEach((bg) => {
+      const section = bg.closest('.planet-section');
+      const stage = ['stratosphere', 'clouds', 'land'].find((s) => section.classList.contains(`planet-section--${s}`));
+      if (!stage) return;
+      bg.style.setProperty('--section-photo', `url("${base}images/planets/${planet}/${stage}.jpg")`);
+    });
+  });
+}
 
 function setPlanetsEnabled(takeover, enabled) {
   takeover.querySelectorAll('[data-planet-target]').forEach((btn) => {
@@ -583,6 +640,26 @@ function openPlanetPage(takeover, btn) {
     delete page.dataset.landing; // safety net; normally cleared at touchdown
     // Scroll-driven FX need real layout — the page is visible now.
     planetFxCtx = createPlanetScrollFX(page);
+    const logoLoopEl = page.querySelector('[data-logo-loop]');
+    if (logoLoopEl && !logoLoopInstance) {
+      logoLoopInstance = initLogoLoop(logoLoopEl, SKILL_ICONS, { speed: 36, gap: 56, logoHeight: 30 });
+    }
+    const ghostCursorEl = page.querySelector('[data-ghost-cursor]');
+    if (ghostCursorEl && !ghostCursorInstance && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      // Every planet's Clouds stage gets this now, tinted with that page's
+      // own --pp-accent (read live off the page rather than duplicating
+      // the palette here) so the trail always matches wherever it's on.
+      const accent = getComputedStyle(page).getPropertyValue('--pp-accent').trim() || undefined;
+      // Three.js + postprocessing is a heavy dependency (~500kb) most
+      // visitors will never need — code-split so it only downloads once
+      // someone actually opens a planet with this effect.
+      import('./ghostCursor.js').then(({ initGhostCursor }) => {
+        // The page may have been closed again before this resolved.
+        if (!ghostCursorInstance && ghostCursorEl.isConnected && activePlanetPage?.page === page) {
+          ghostCursorInstance = initGhostCursor(ghostCursorEl, accent ? { color: accent } : undefined);
+        }
+      });
+    }
     page.focus({ preventScroll: true });
   };
 
@@ -671,6 +748,14 @@ function closePlanetPage() {
   if (planetFxCtx) {
     planetFxCtx.revert();
     planetFxCtx = null;
+  }
+  if (logoLoopInstance) {
+    logoLoopInstance.destroy();
+    logoLoopInstance = null;
+  }
+  if (ghostCursorInstance) {
+    ghostCursorInstance.destroy();
+    ghostCursorInstance = null;
   }
 
   // Re-arm the star field before anything is revealed — the stars are up
@@ -763,15 +848,34 @@ const RETURN_PULL_THRESHOLD = 380; // accumulated wheel/touch px
 
 function createReturnPull(page) {
   const cueLine = page.querySelector('[data-return-cue] i');
-  const yTo = gsap.quickTo(page, 'y', { duration: 0.3, ease: 'power2.out' });
-  const lineTo = cueLine ? gsap.quickTo(cueLine, 'scaleY', { duration: 0.3, ease: 'power2.out' }) : null;
   let pull = 0;
+
+  // Discrete wheel events, so plain overwriting tweens (not quickTo):
+  // quickTo caches its setter, which desyncs after the clearProps below.
+  const applyPull = (y) => gsap.to(page, { y, duration: 0.25, ease: 'power2.out', overwrite: 'auto' });
+  const applyLine = (s) => {
+    if (cueLine) gsap.to(cueLine, { scaleY: s, duration: 0.25, ease: 'power2.out', overwrite: 'auto' });
+  };
 
   const relax = () => {
     if (!pull) return;
     pull = 0;
-    yTo(0);
-    if (lineTo) lineTo(1);
+    applyLine(1);
+    gsap.to(page, {
+      y: 0,
+      duration: 0.35,
+      ease: 'power2.out',
+      overwrite: 'auto',
+      // CRITICAL: fully remove the transform once settled, not just tween
+      // to 0 — a leftover translate3d(0,0,0) still counts as "transformed",
+      // which re-anchors the page's position:fixed children (return cue,
+      // gauge) to its scrollable content box. That was the bug where both
+      // scrolled away with the page after an abandoned pull. The lift-off
+      // path already clears it in its own cleanup.
+      onComplete: () => {
+        if (!planetTransitionRunning) gsap.set(page, { clearProps: 'transform' });
+      },
+    });
   };
 
   Observer.create({
@@ -781,13 +885,20 @@ function createReturnPull(page) {
       if (!activePlanetPage || activePlanetPage.page !== page || planetTransitionRunning) return;
       if (page.scrollTop <= 1 && self.deltaY < 0) {
         pull += -self.deltaY;
+        // The gesture is committing — pre-build the WebGL star field NOW,
+        // during the pull, so the lift-off doesn't pay the synchronous
+        // context-creation stall on its very first frame.
+        if (pull > 60 && !particleField && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          prewarmParticles(activePlanetPage.takeover);
+          if (particleField) particleField.setSpread(10);
+        }
         // Rubber band: displacement approaches ~110px asymptotically —
         // the further you pull, the less it gives.
-        yTo(110 * (1 - 1 / (1 + pull / 260)));
-        if (lineTo) lineTo(1 + Math.min(pull / 180, 1.6));
+        applyPull(110 * (1 - 1 / (1 + pull / 260)));
+        applyLine(1 + Math.min(pull / 180, 1.6));
         if (pull >= RETURN_PULL_THRESHOLD) {
           pull = 0;
-          if (lineTo) lineTo(1);
+          applyLine(1);
           closePlanetPage();
         }
       } else {
@@ -821,8 +932,8 @@ function createPlanetScrollFX(page) {
       });
     }
 
-    if (page.dataset.planetPage !== 'projects') return;
-
+    // Any page carrying a descent track gets the full crossfade
+    // choreography (Projects, About, and future planets alike).
     const descentTrack = page.querySelector('[data-descent-track]');
     if (!descentTrack) return;
 
@@ -845,27 +956,52 @@ function createPlanetScrollFX(page) {
         trigger: descentTrack,
         start: 'top top',
         end: 'bottom bottom',
-        scrub: 0.6,
+        // 0.8s catch-up (same as the hero's scrub): a hard wheel flick
+        // glides through the dissolve instead of snapping past it.
+        scrub: 0.8,
       },
     });
 
     sections.forEach((section, i) => {
       const bg = section.querySelector('[data-section-bg]');
       const items = section.querySelectorAll('[data-fx-item]');
+
+      // Continuous drift: while a stage owns the screen, its backdrop is
+      // never frozen — it keeps easing slowly toward the camera across the
+      // stage's whole scroll share, so every wheel tick visibly responds
+      // (a static dwell is what made the descent read as "pages shifting").
+      if (bg) {
+        tl.fromTo(
+          bg,
+          { scale: 1.09 },
+          { scale: 1, ease: 'none', duration: 1.3 },
+          Math.max(0, i - 0.15)
+        );
+      }
+
       if (i > 0) {
-        const p = i - fade / 2; // boundary crossfade start
+        // Biased LATE (30% before the boundary, 70% after): each stage
+        // holds mostly sharp through its own scroll before departing.
+        const p = i - fade * 0.3;
         const prev = sections[i - 1];
+        // Fly-through, not a flat dissolve: the outgoing stage swells past
+        // the lens while defocusing — and stays visible through the first
+        // stretch of that motion (its fade starts late) so the movement is
+        // actually seen...
+        tl.fromTo(prev, { scale: 1 }, { scale: 1.14, ease: 'power1.in', duration: fade }, p);
         tl.fromTo(prev, { filter: 'blur(0px)' }, { filter: `blur(${maxBlur}px)`, duration: fade }, p);
-        tl.to(prev, { autoAlpha: 0, duration: fade }, p);
+        tl.to(prev, { autoAlpha: 0, duration: fade * 0.7 }, p + fade * 0.3);
+        // ...while the incoming stage rises from depth into focus, surfacing
+        // early so the two coexist dimensionally mid-crossfade.
+        tl.fromTo(section, { scale: 0.94 }, { scale: 1, ease: 'power1.out', duration: fade }, p);
         tl.fromTo(section, { filter: `blur(${maxBlur}px)` }, { filter: 'blur(0px)', duration: fade }, p);
-        tl.to(section, { autoAlpha: 1, duration: fade }, p);
-        if (bg) tl.fromTo(bg, { scale: 1.1 }, { scale: 1, duration: fade * 1.6, ease: 'power1.out' }, p);
+        tl.to(section, { autoAlpha: 1, duration: fade * 0.5 }, p);
         if (items.length) {
           tl.fromTo(
             items,
             { autoAlpha: 0, y: 60 },
-            { autoAlpha: 1, y: 0, duration: 0.3, stagger: 0.06, ease: 'power1.out' },
-            p + fade * 0.55
+            { autoAlpha: 1, y: 0, duration: 0.35, stagger: 0.08, ease: 'power1.out' },
+            p + fade * 0.7
           );
         }
       }
@@ -873,6 +1009,29 @@ function createPlanetScrollFX(page) {
     // Pad the timeline to exactly 3 stage-units so each stage owns an
     // equal share of the track's scroll distance.
     tl.set({}, {}, sections.length);
+
+    // Aurora wash (About): the borealis band drifts sideways and
+    // strengthens as the descent deepens — faint in orbit, fullest down
+    // on the surface where the art's own aurora lives.
+    const aurora = page.querySelector('[data-aurora]');
+    if (aurora) {
+      gsap.fromTo(
+        aurora,
+        { xPercent: -8, opacity: 0.05 },
+        {
+          xPercent: 8,
+          opacity: 0.2,
+          ease: 'none',
+          scrollTrigger: {
+            scroller: page,
+            trigger: descentTrack,
+            start: 'top top',
+            end: 'bottom bottom',
+            scrub: 0.8,
+          },
+        }
+      );
+    }
 
     // Descent gauge: the marker rides the track with total progress; the
     // stage label swaps as each atmospheric layer is reached.

@@ -1,0 +1,81 @@
+/* Vanilla port of the React Bits LogoLoop styles (reactbits.dev) — the
+   fade-out edges are reworked from the original's solid-color gradient
+   (which needs a flat background to match) to a mask-image instead, since
+   this site's sections sit over photographic art, not a flat fill. */
+
+.logo-loop {
+  position: relative;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+}
+
+.logo-loop__track {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+  user-select: none;
+  animation: logo-loop-scroll var(--logo-loop-duration, 30s) linear infinite;
+}
+
+.logo-loop--pause-hover:hover .logo-loop__track {
+  animation-play-state: paused;
+}
+
+@keyframes logo-loop-scroll {
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.logo-loop__list {
+  display: flex;
+  align-items: center;
+  gap: var(--logo-loop-gap, 48px);
+  padding-right: var(--logo-loop-gap, 48px);
+}
+
+.logo-loop__item {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  color: var(--color-text);
+  opacity: 0.82;
+  transition:
+    color 0.3s ease,
+    opacity 0.3s ease,
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.logo-loop__icon {
+  display: inline-flex;
+}
+
+.logo-loop__icon svg {
+  height: var(--logo-loop-height, 32px);
+  width: auto;
+  fill: currentColor;
+  display: block;
+}
+
+.logo-loop--scale-hover .logo-loop__item {
+  overflow: visible;
+}
+
+.logo-loop--scale-hover .logo-loop__item:hover {
+  color: var(--pp-accent);
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-loop {
+    mask-image: none;
+    -webkit-mask-image: none;
+    overflow-x: auto;
+  }
+
+  .logo-loop__track {
+    animation: none;
+  }
+}

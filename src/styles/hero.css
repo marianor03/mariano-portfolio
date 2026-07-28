@@ -126,6 +126,27 @@
   }
 }
 
+/* The rotating hook: unlike the meta beats below (which crossfade in step
+   with the scroll-scrubbed portrait sequence), this animates on its own
+   timer from the moment the page loads — the one thing in the hero a
+   recruiter sees moving before they've scrolled or interacted at all. */
+.hero__hook {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.35em;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(1.1rem, 0.9rem + 1.2vw, 1.5rem);
+  line-height: 1.3;
+  color: var(--color-text-muted);
+}
+
+.hero__hook-rotate {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
 .hero__meta {
   position: relative;
   width: min(92vw, 38rem);
