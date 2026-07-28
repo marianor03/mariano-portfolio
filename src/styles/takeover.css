@@ -79,6 +79,22 @@
   transition: box-shadow 1.4s var(--ease-premium);
 }
 
+/* --sun-scale controls only the settled/ignited sun size (takeover-ball-in
+   below) — never the loop's own 0.9/1.7/etc multipliers, which stay
+   identical on every viewport so the loading blob's gooey wobble isn't
+   touched. Narrower viewports get a smaller final sun so it (and its
+   560px glow) don't overwhelm the screen the way a flat 3x does at
+   390px wide. */
+:root {
+  --sun-scale: 3;
+}
+
+@media (max-width: 700px) {
+  :root {
+    --sun-scale: 1.8;
+  }
+}
+
 /* Sun surface: an orange gradient layered over the off-white ball, faded
    in by .is-sun (gradients can't transition directly, so the crossfade
    rides on this pseudo-element's opacity). */
@@ -115,8 +131,8 @@
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 560px;
-  height: 560px;
+  width: clamp(280px, 70vw, 560px);
+  height: clamp(280px, 70vw, 560px);
   transform: translate(-50%, -50%);
   border-radius: 50%;
   background: radial-gradient(
@@ -193,15 +209,15 @@
   animation: takeover-ball-in 0.6s var(--ease-premium) forwards;
 }
 
-/* Grows to 3x (90px) rather than the loop's 0.9 — this settled ball is
-   the scene's sun, not a loader dot anymore. */
+/* Grows to --sun-scale (3x/90px on desktop) rather than the loop's 0.9 —
+   this settled ball is the scene's sun, not a loader dot anymore. */
 @keyframes takeover-ball-in {
   from {
     transform: scale(0) translate(-50%, -50%);
   }
 
   to {
-    transform: scale(3) translate(-50%, -50%);
+    transform: scale(var(--sun-scale)) translate(-50%, -50%);
   }
 }
 

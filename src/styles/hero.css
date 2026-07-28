@@ -93,6 +93,16 @@
   text-align: left;
 }
 
+/* Below 701px the scroll-cue pill (bottom: space-6, ~5.3rem tall including
+   its padding and line) sits close enough to the viewport bottom that the
+   fixed space-8 offset here let the meta line's box run underneath it.
+   Pushed up just enough to clear it. */
+@media (max-width: 700px) {
+  .hero__content {
+    bottom: 8.5rem;
+  }
+}
+
 .hero__nameplate {
   font-family: var(--font-nameplate);
   font-weight: 400;

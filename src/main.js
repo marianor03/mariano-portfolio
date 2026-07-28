@@ -532,6 +532,14 @@ function initPlanetPages() {
     btn.addEventListener('blur', resumeOrbitFromHover);
   });
   document.querySelectorAll('[data-planet-page]').forEach((page) => createReturnPull(page));
+  document.querySelectorAll('[data-return-btn]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      // Same interruptibility as Escape below: don't leave the landing
+      // half-finished, jump it to a consistent end state before closing.
+      if (planetTransitionRunning && planetOpenTl) planetOpenTl.progress(1);
+      closePlanetPage();
+    });
+  });
   window.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
     // Interruptibility: never lock the user inside the ~2s landing. If
@@ -922,11 +930,33 @@ function createPlanetScrollFX(page) {
   if (!sections.length) return null;
 
   return gsap.context(() => {
-    // Return cue bows out as soon as the descent starts, comes back at top.
+    // Return cue (the pull gauge line) bows out as soon as the descent
+    // starts, comes back at top.
     const cue = page.querySelector('[data-return-cue]');
     if (cue) {
       gsap.to(cue, {
         autoAlpha: 0,
+        ease: 'none',
+        scrollTrigger: { scroller: page, trigger: sections[0], start: 'top top', end: '+=220', scrub: true },
+      });
+    }
+
+    // Return button: docks in the top-left corner by default (its CSS rest
+    // position) but sits shifted right on open so it visually starts
+    // centered next to the cue above. That shift is measured off the
+    // dock's own laid-out rect rather than hardcoded, since it depends on
+    // viewport width and the button's own text width. Scrolling into the
+    // descent scrubs it back to 0 — same trigger window as the cue — so it
+    // slides home into the corner and stays there, clickable, for the rest
+    // of the page. No fade: unlike the cue, this is the user's persistent
+    // way back without scrolling all the way up.
+    const dock = page.querySelector('[data-return-dock]');
+    if (dock) {
+      const rect = dock.getBoundingClientRect();
+      const centeredX = window.innerWidth / 2 - (rect.left + rect.width / 2);
+      gsap.set(dock, { x: centeredX });
+      gsap.to(dock, {
+        x: 0,
         ease: 'none',
         scrollTrigger: { scroller: page, trigger: sections[0], start: 'top top', end: '+=220', scrub: true },
       });

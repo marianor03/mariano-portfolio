@@ -828,34 +828,24 @@
 
 /* ——— Chrome ——— */
 
-/* Return cue: replaces the old back button. Instructs once, then fades
-   out as soon as the user scrolls down (scrubbed in main.js). Pulling
-   further up while already at the top rubber-bands the page and triggers
-   the lift-off back to orbit (createReturnPull in main.js). The upward
-   line stretches with the pull — the cue itself is the gesture's gauge.
-   Escape remains the keyboard path back. */
+/* Return cue: the pull-gesture gauge only now — the line stretches with
+   an upward pull and bows out as soon as the descent starts (scrubbed in
+   main.js), same as before. The clickable button lives in .planet-page__return-dock
+   below: it starts docked right next to this cue (same top offset,
+   centered) but slides to the top-left corner as the same descent begins
+   (createPlanetScrollFX, main.js) and stays there, docked and clickable,
+   for the rest of the page — the user always has a way back without
+   scrolling all the way up. Escape is the keyboard path back regardless
+   of where either of these are. */
 .planet-page__return-cue {
   position: fixed;
   top: var(--space-5);
   left: 50%;
   transform: translateX(-50%);
   z-index: var(--z-raised);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-2);
   color: var(--pp-ink);
-  font-size: var(--text-xs);
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
   opacity: 0.9;
   pointer-events: none;
-}
-
-/* The instruction rides a liquid-glass pill (class in markup). */
-.planet-page__return-cue span {
-  padding: 0.55em 1.1em;
-  border-radius: 999px;
 }
 
 .planet-page__return-cue i {
@@ -865,6 +855,59 @@
   background: linear-gradient(to top, transparent, var(--pp-accent));
   transform-origin: bottom center;
   animation: return-cue-pulse 2.2s var(--ease-premium) infinite;
+}
+
+/* Dock: the position/slide layer. main.js measures the gap between this
+   rest position and its corner target once per page-open and drives the
+   slide via a scrubbed x transform on THIS element — kept separate from
+   .planet-page__return-btn below so GSAP's inline transform never
+   clobbers that button's own hover/press transforms (inline style always
+   wins over a stylesheet rule, so the two can't share one element). */
+.planet-page__return-dock {
+  position: fixed;
+  top: var(--space-5);
+  left: var(--gutter);
+  z-index: var(--z-raised);
+}
+
+.planet-page__return-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.55em 1.1em;
+  border-radius: 999px;
+  border: 1px solid var(--glass-edge);
+  color: var(--pp-ink);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    transform 180ms var(--ease-premium),
+    background 180ms var(--ease-premium),
+    border-color 180ms var(--ease-premium);
+}
+
+.planet-page__return-icon {
+  width: 0.9em;
+  height: 0.9em;
+  flex-shrink: 0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .planet-page__return-btn:hover {
+    transform: translateY(-1px);
+    border-color: var(--pp-accent);
+  }
+}
+
+.planet-page__return-btn:active {
+  transform: translateY(0) scale(0.97);
+}
+
+.planet-page__return-btn:focus-visible {
+  outline: 2px solid var(--pp-accent);
+  outline-offset: 3px;
 }
 
 @keyframes return-cue-pulse {
