@@ -13,6 +13,13 @@ import svgTailwind from './icons/tailwindcss.svg?raw';
 import svgHtml5 from './icons/html5.svg?raw';
 import svgCss3 from './icons/css3.svg?raw';
 import svgGit from './icons/git.svg?raw';
+import svgFlask from './icons/flask.svg?raw';
+import svgMysql from './icons/mysql.svg?raw';
+import svgPostgresql from './icons/postgresql.svg?raw';
+import svgMongodb from './icons/mongodb.svg?raw';
+import svgDocker from './icons/docker.svg?raw';
+import svgAzure from './icons/microsoftazure.svg?raw';
+import svgApacheNifi from './icons/apachenifi.svg?raw';
 
 gsap.registerPlugin(ScrollTrigger, CustomEase, Observer);
 
@@ -482,10 +489,17 @@ const SKILL_ICONS = [
   { svg: svgJavaScript, label: 'JavaScript' },
   { svg: svgPython, label: 'Python' },
   { svg: svgReact, label: 'React' },
+  { svg: svgFlask, label: 'Flask' },
   { svg: svgTailwind, label: 'Tailwind CSS' },
   { svg: svgHtml5, label: 'HTML5' },
   { svg: svgCss3, label: 'CSS3' },
   { svg: svgGit, label: 'Git' },
+  { svg: svgMysql, label: 'MySQL' },
+  { svg: svgPostgresql, label: 'PostgreSQL' },
+  { svg: svgMongodb, label: 'MongoDB' },
+  { svg: svgDocker, label: 'Docker' },
+  { svg: svgAzure, label: 'Microsoft Azure' },
+  { svg: svgApacheNifi, label: 'Apache NiFi' },
 ];
 
 // Sets each planet section's --section-photo custom property at runtime
