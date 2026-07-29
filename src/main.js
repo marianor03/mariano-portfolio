@@ -111,6 +111,9 @@ function buildScrollSequence({ hero, frames, images, beats, scrollCue, takeover 
   // visually indistinguishable mid-crossfade anyway.
   const maxBlur = 18;
 
+  const heroGaugeMarker = hero.querySelector('[data-hero-gauge-marker]');
+  const heroGaugeTrack = hero.querySelector('.hero__gauge-track');
+
   const tl = gsap.timeline({
     scrollTrigger: {
       trigger: hero,
@@ -132,6 +135,17 @@ function buildScrollSequence({ hero, frames, images, beats, scrollCue, takeover 
         // completely different zoom animation. Resetting also frees the
         // particle field's WebGL loop instead of taxing every frame.
         if (takeover && self.progress < 0.7) resetTakeover(takeover);
+        // Hero gauge: same riding-marker mechanic as the planet pages'
+        // descent gauge, tracking this same scroll range instead of a
+        // page's own descentTrack. Piggybacked on this onUpdate rather
+        // than a second standalone ScrollTrigger on the same (pinned)
+        // trigger element — a separate one here gets its start/end
+        // computed against the pin-spacer incorrectly and never fires.
+        if (heroGaugeMarker && heroGaugeTrack) {
+          gsap.set(heroGaugeMarker, {
+            y: self.progress * (heroGaugeTrack.clientHeight - heroGaugeMarker.offsetHeight),
+          });
+        }
       },
     },
   });
@@ -673,7 +687,18 @@ function openPlanetPage(takeover, btn) {
       logoLoopInstance = initLogoLoop(logoLoopEl, SKILL_ICONS, { speed: 36, gap: 56, logoHeight: 30 });
     }
     const ghostCursorEl = page.querySelector('[data-ghost-cursor]');
-    if (ghostCursorEl && !ghostCursorInstance && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    // Skipped on mobile: it's a cursor trail with no real cursor to trail
+    // on a touch screen, it's the heaviest thing on the page (a whole
+    // WebGL context + Three.js), and it's the one thing implicated in a
+    // mobile-Safari-only rendering bug (a shader in its post-processing
+    // chain, prone to the exact kind of precision quirk that varies by
+    // GPU). Not worth keeping for a device class it wasn't built for.
+    if (
+      ghostCursorEl &&
+      !ghostCursorInstance &&
+      !window.matchMedia('(prefers-reduced-motion: reduce)').matches &&
+      !window.matchMedia('(max-width: 700px)').matches
+    ) {
       // Every planet's Clouds stage gets this now, tinted with that page's
       // own --pp-accent (read live off the page rather than duplicating
       // the palette here) so the trail always matches wherever it's on.

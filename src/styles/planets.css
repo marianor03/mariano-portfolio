@@ -772,17 +772,30 @@
 
   .planet-section__content.about-story-layout {
     grid-template-columns: 1fr;
+    /* The base rule's gap: var(--space-8) (48px) only ever creates a
+       COLUMN gap in the 2-column desktop layout (one row, so no row-gap
+       exists to speak of). Single-column here, it becomes a ROW gap
+       instead, stacking on top of .about-story's own margin-top below —
+       between the two, mobile content ran ~100px taller than the space
+       .planet-section centers it in, pushing it up underneath the
+       (now permanently visible) return button. */
+    gap: var(--space-4);
   }
 
   .about-story__statement {
     font-size: clamp(1.35rem, 1.1rem + 2.5vw, 1.75rem);
+    /* Clears the top-right gauge without shifting the whole page's
+       centering — a global padding-right on .planet-section did that
+       (every page's content sat ~20px left of true center) trying to
+       solve what only this one raw, card-less paragraph actually needed. */
+    padding-right: 2.5rem;
   }
 
   .about-story {
     align-self: stretch;
     max-width: none;
-    margin-top: var(--space-6);
-    padding: var(--space-5) var(--space-5);
+    margin-top: 0;
+    padding: var(--space-4) var(--space-5);
   }
 }
 
@@ -1041,11 +1054,20 @@
    clear of content on every page, unlike the middle. */
 @media (max-width: 700px) {
   .planet-page__gauge {
-    top: var(--space-6);
-    right: var(--space-4);
-    transform: none;
+    /* Middle-right, hugging the true edge rather than tucked into the
+       top corner. */
+    right: 0.375rem;
     padding: var(--space-3) var(--space-2);
     gap: var(--space-2);
+  }
+
+  /* The stage label (writing-mode: vertical-rl text) is what makes the
+     desktop gauge ~37px wide — hugging the true edge at that width still
+     reached into content that also sits centered in the same vertical
+     band. Dropped on mobile (same simplification as .hero__gauge) so the
+     gauge is closer to track-width-only, leaving real clearance. */
+  .planet-page__gauge-stage {
+    display: none;
   }
 
   .planet-page__gauge-track {
@@ -1091,20 +1113,6 @@
      ghost-cursor mount), so hit-testing always falls through to whichever
      section's actual interactive layer is under the pointer. */
   pointer-events: none;
-}
-
-/* The mobile gauge measures ~37px wide sitting 16px from the edge —
-   About's full-width statement text (no card inset to pull it back,
-   unlike the fact/strip/link cards elsewhere) was the one layout that ran
-   right into it. Reserved on every section rather than just About's so no
-   other single-column mobile layout hits the same wall later. Placed
-   AFTER the base rule above (same specificity, source order decides) —
-   an earlier attempt at this same override above the base rule got
-   silently clobbered by it. */
-@media (max-width: 700px) {
-  .planet-section {
-    padding-right: calc(var(--gutter) + 2.5rem);
-  }
 }
 
 /* Traveling seam-hider: every section after the first dissolves its own
