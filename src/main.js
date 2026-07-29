@@ -970,8 +970,11 @@ function createPlanetScrollFX(page) {
     // slides home into the corner and stays there, clickable, for the rest
     // of the page. No fade: unlike the cue, this is the user's persistent
     // way back without scrolling all the way up.
+    // Mobile skips the slide entirely and stays locked in the corner: the
+    // narrower the screen, the less room there is for a button to travel
+    // across before it's back where content already needs the space.
     const dock = page.querySelector('[data-return-dock]');
-    if (dock) {
+    if (dock && !window.matchMedia('(max-width: 700px)').matches) {
       const rect = dock.getBoundingClientRect();
       const centeredX = window.innerWidth / 2 - (rect.left + rect.width / 2);
       gsap.set(dock, { x: centeredX });

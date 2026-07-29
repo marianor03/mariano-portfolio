@@ -11,6 +11,13 @@
 .hero {
   position: relative;
   height: 100vh;
+  /* dvh accounts for Safari's collapsing address bar — plain vh uses the
+     viewport size with the bar hidden, so content sized/positioned against
+     it drifts out of alignment with what's actually visible as the bar
+     shows/hides while scrolling. Declared after vh as a progressive
+     enhancement: browsers that don't parse the dvh unit ignore this line
+     entirely and keep the vh value above. */
+  height: 100dvh;
   min-height: 34rem;
   overflow: hidden;
   /* The outro zoom scales this whole section; declaring it up front lets
@@ -25,6 +32,7 @@
   left: 0;
   right: 0;
   height: 58vh;
+  height: 58dvh;
   /* Fade the bottom edge into the page background instead of a hard cutoff. */
   -webkit-mask-image: linear-gradient(to bottom, black 55%, transparent 100%);
   mask-image: linear-gradient(to bottom, black 55%, transparent 100%);

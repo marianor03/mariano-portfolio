@@ -813,12 +813,18 @@
    crossfade, reading as an instant swap instead of a scrubbed dissolve). */
 .planet-page__track {
   height: 520vh;
+  /* See the .hero dvh comment in hero.css — same Safari address-bar issue.
+     Keeps the scroll distance consistent with .planet-page__stage's own
+     height below, so ScrollTrigger's math (which reads this element's
+     rendered height) doesn't drift out of sync with the sticky stage. */
+  height: 520dvh;
 }
 
 .planet-page__stage {
   position: sticky;
   top: 0;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
 }
 
@@ -1065,6 +1071,7 @@
   position: sticky;
   top: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;

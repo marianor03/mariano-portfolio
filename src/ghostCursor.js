@@ -166,8 +166,22 @@ function makeUnpremultiplyPass() {
       varying vec2 vUv;
       void main(){
         vec4 c = texture2D(tDiffuse, vUv);
-        float a = max(c.a, 1e-5);
-        vec3 straight = c.rgb / a;
+        // Guarding the divide with max(c.a, 1e-5) instead of a real
+        // threshold meant near-transparent pixels (most of this canvas,
+        // most of the time — the trail is a small effect over an
+        // otherwise-empty full-viewport layer) divided by almost zero,
+        // amplifying any residual RGB noise there by up to 100000x before
+        // the clamp pinned it to solid white. Harmless where mediump
+        // float precision hides the error, but exactly the kind of thing
+        // that blows up differently on other GPUs/precision — output flat
+        // transparent black below a real threshold instead of dividing at
+        // all, which is what caused the bright, unreadable-content bug on
+        // mobile Safari (this canvas sits over every page's Clouds stage).
+        if (c.a < 0.02) {
+          gl_FragColor = vec4(0.0);
+          return;
+        }
+        vec3 straight = c.rgb / c.a;
         gl_FragColor = vec4(clamp(straight, 0.0, 1.0), c.a);
       }
     `,
