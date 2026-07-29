@@ -151,6 +151,20 @@
   opacity: 1;
 }
 
+/* resetTakeover() (main.js) strips .is-sun the instant the user scrolls
+   back up past the blackout threshold, but .blob-center::after and
+   .takeover__sunglow fade OUT over 1.4s/1.6s of their own CSS transition —
+   built for a graceful ignition, not an instant teardown. Scroll back
+   down again inside that window (very possible — it's not a rare edge
+   case) and the takeover overlay's own opacity snaps back to visible via
+   the scrubbed ScrollTrigger while the glow is still mid-fade, so the sun
+   appears to glow before it exists. main.js adds this class for one frame
+   during reset to force both transitions to complete instantly instead. */
+.takeover.is-resetting .blob-center::after,
+.takeover.is-resetting .takeover__sunglow {
+  transition: none;
+}
+
 .takeover .blob {
   position: absolute;
   background: var(--color-text);

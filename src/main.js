@@ -449,7 +449,13 @@ function resetTakeover(takeover) {
     takeoverSeq = null;
   }
 
+  // See the .takeover.is-resetting comment in takeover.css: forces the
+  // sun glow/surface to snap off instantly instead of riding out their own
+  // multi-second CSS transitions, which a fast scroll-up-then-back-down
+  // could otherwise catch mid-fade.
+  takeover.classList.add('is-resetting');
   takeover.classList.remove('is-running', 'is-settled', 'is-sun');
+  requestAnimationFrame(() => takeover.classList.remove('is-resetting'));
   setPlanetsEnabled(takeover, false);
   gsap.set(takeover.querySelector('[data-takeover-loader]'), { opacity: 0 });
   gsap.set(takeover.querySelector('[data-takeover-menu-cue]'), { opacity: 0 });
@@ -989,7 +995,15 @@ function createPlanetScrollFX(page) {
     // into focus; the incoming backdrop settles from a slightly deeper
     // frame, and the stage's items cascade up right after focus lands.
     const maxBlur = 16;
-    const fade = 0.5; // crossfade width in stage units
+    // Crossfade width in stage units. Was 0.5 — with entry AND exit windows
+    // both that wide, a stage's own "fully focused, nothing moving" dwell
+    // (the gap between its items finishing their fade-in and the next
+    // stage's blur-out starting) shrank to a sliver, especially on pages
+    // with real reading content (About's second card): the text barely
+    // finished appearing before the next transition's blur made it
+    // illegible again. Narrower windows leave more dwell without changing
+    // the overall descent's total scroll length.
+    const fade = 0.36;
 
     gsap.set(sections.slice(1), { autoAlpha: 0 });
 
@@ -1028,24 +1042,41 @@ function createPlanetScrollFX(page) {
         // holds mostly sharp through its own scroll before departing.
         const p = i - fade * 0.3;
         const prev = sections[i - 1];
+        const prevBg = prev.querySelector('[data-section-bg]');
         // Fly-through, not a flat dissolve: the outgoing stage swells past
         // the lens while defocusing — and stays visible through the first
         // stretch of that motion (its fade starts late) so the movement is
         // actually seen...
         tl.fromTo(prev, { scale: 1 }, { scale: 1.14, ease: 'power1.in', duration: fade }, p);
-        tl.fromTo(prev, { filter: 'blur(0px)' }, { filter: `blur(${maxBlur}px)`, duration: fade }, p);
+        // Blur targets the backdrop layer only, never the section itself:
+        // the frost cards (about-story, about-fact, contact-link — anything
+        // using backdrop-filter) are siblings of the bg layer, not
+        // descendants of it, but they ARE descendants of .planet-section.
+        // Animating `filter` on an ancestor of a backdrop-filter element is
+        // a known WebKit compositing bug — Safari on iOS blows the backdrop
+        // out to near-white instead of blurring it, which is exactly the
+        // "bright light, unreadable" report on mobile About. Keeping the
+        // blur scoped to the bg layer sidesteps it entirely and, as a bonus,
+        // never blurs the readable text/cards.
+        if (prevBg) tl.fromTo(prevBg, { filter: 'blur(0px)' }, { filter: `blur(${maxBlur}px)`, duration: fade }, p);
         tl.to(prev, { autoAlpha: 0, duration: fade * 0.7 }, p + fade * 0.3);
         // ...while the incoming stage rises from depth into focus, surfacing
         // early so the two coexist dimensionally mid-crossfade.
         tl.fromTo(section, { scale: 0.94 }, { scale: 1, ease: 'power1.out', duration: fade }, p);
-        tl.fromTo(section, { filter: `blur(${maxBlur}px)` }, { filter: 'blur(0px)', duration: fade }, p);
+        if (bg) tl.fromTo(bg, { filter: `blur(${maxBlur}px)` }, { filter: 'blur(0px)', duration: fade }, p);
         tl.to(section, { autoAlpha: 1, duration: fade * 0.5 }, p);
         if (items.length) {
+          // Starts at the same 30%-through offset the OUTGOING fade uses
+          // (symmetric with `tl.to(prev, ..., p + fade * 0.3)` above) rather
+          // than waiting until 70% through the window — items used to only
+          // finish appearing right as the backdrop reached full focus,
+          // leaving almost no time to read them before the next stage's
+          // blur-out began eating into the same dwell.
           tl.fromTo(
             items,
             { autoAlpha: 0, y: 60 },
-            { autoAlpha: 1, y: 0, duration: 0.35, stagger: 0.08, ease: 'power1.out' },
-            p + fade * 0.7
+            { autoAlpha: 1, y: 0, duration: 0.3, stagger: 0.08, ease: 'power1.out' },
+            p + fade * 0.3
           );
         }
       }

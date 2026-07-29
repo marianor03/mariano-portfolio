@@ -181,6 +181,34 @@
   --planet-gradient: radial-gradient(circle at 32% 30%, #e8a678 0%, #c97b4a 55%, #6e3a1c 100%);
 }
 
+/* Planet sizes are design-space px inside the 1400x1400 canvas orbit.js
+   scales down by container.clientWidth/1400 — on a ~390px phone that's a
+   ~0.28x multiplier, so the same values that read fine on desktop shrink
+   to ~7-13px final circles, too small to comfortably tap. Roughly doubled
+   here (still well under the sun's own mobile size, --sun-scale in
+   takeover.css) so mobile's final on-screen sizes land around 13-27px. */
+@media (max-width: 700px) {
+  .orbit-planet--mint {
+    width: 66px;
+    height: 66px;
+  }
+
+  .orbit-planet--sand {
+    width: 92px;
+    height: 92px;
+  }
+
+  .orbit-planet--slate {
+    width: 48px;
+    height: 48px;
+  }
+
+  .orbit-planet--rust {
+    width: 78px;
+    height: 78px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .orbit-planet::before,
   .orbit-planet__label {

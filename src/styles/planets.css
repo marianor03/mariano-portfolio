@@ -941,6 +941,37 @@
   }
 }
 
+/* First-visit orientation: a small "keep going" nudge under the lede on
+   every page's Stratosphere stage. Lives inside the stage's own content,
+   not fixed — it fades out for free along with the rest of Stratosphere
+   the instant the descent starts (createPlanetScrollFX's generic crossfade
+   already drives that), no extra JS needed. */
+.planet-page__scroll-hint {
+  margin-top: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--pp-ink);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.planet-page__scroll-hint span {
+  padding: 0.55em 1.1em;
+  border-radius: 999px;
+}
+
+.planet-page__scroll-hint i {
+  display: block;
+  width: 1px;
+  height: 1.8rem;
+  background: linear-gradient(to bottom, var(--pp-accent), transparent);
+  animation: return-cue-pulse 2.2s var(--ease-premium) infinite;
+}
+
 /* Descent gauge (projects): a fixed altitude readout — the marker rides
    the track with scroll progress and the stage label swaps as each layer
    is reached (wired in createPlanetScrollFX, main.js). */
@@ -993,14 +1024,32 @@
   box-shadow: 0 0 12px var(--pp-accent);
 }
 
+/* Kept visible on mobile (was display:none) — a recruiter dropped into an
+   unfamiliar, non-standard interface needs every orientation signal it can
+   get, and "how much of this page is left" is one of them. Vertically
+   centered (like desktop) it collided with mobile's full-width stacked
+   cards and centered text — every page's content passes through the
+   viewport's vertical middle at some point in the descent. Pinned to the
+   top-right corner instead, level with the return button's top-left
+   corner (both var(--space-5)/var(--space-6) from the top): corners stay
+   clear of content on every page, unlike the middle. */
 @media (max-width: 700px) {
   .planet-page__gauge {
-    display: none;
+    top: var(--space-6);
+    right: var(--space-4);
+    transform: none;
+    padding: var(--space-3) var(--space-2);
+    gap: var(--space-2);
+  }
+
+  .planet-page__gauge-track {
+    height: 12vh;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .planet-page__return-cue i {
+  .planet-page__return-cue i,
+  .planet-page__scroll-hint i {
     animation: none;
   }
 }
@@ -1035,6 +1084,20 @@
      ghost-cursor mount), so hit-testing always falls through to whichever
      section's actual interactive layer is under the pointer. */
   pointer-events: none;
+}
+
+/* The mobile gauge measures ~37px wide sitting 16px from the edge —
+   About's full-width statement text (no card inset to pull it back,
+   unlike the fact/strip/link cards elsewhere) was the one layout that ran
+   right into it. Reserved on every section rather than just About's so no
+   other single-column mobile layout hits the same wall later. Placed
+   AFTER the base rule above (same specificity, source order decides) —
+   an earlier attempt at this same override above the base rule got
+   silently clobbered by it. */
+@media (max-width: 700px) {
+  .planet-section {
+    padding-right: calc(var(--gutter) + 2.5rem);
+  }
 }
 
 /* Traveling seam-hider: every section after the first dissolves its own
