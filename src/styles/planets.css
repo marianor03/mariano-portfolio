@@ -65,6 +65,36 @@
   display: none;
 }
 
+/* Page chrome (pull cue, return button, descent gauge) is fixed to the
+   viewport, so it rides in with the page's slide and background. Held back
+   until touchdown (main.js adds .is-chrome-in at the same beat the first
+   section's content blooms) and then faded in, so it arrives like the main
+   content instead of with the backdrop. Opacity only: the dock's x and the
+   gauge's translateY are transforms owned elsewhere. `backwards` fill (not
+   `both`) so once the fade ends, the cue's scrubbed inline opacity takes
+   over again. */
+.planet-page:not(.is-chrome-in) .planet-page__return-cue,
+.planet-page:not(.is-chrome-in) .planet-page__return-dock,
+.planet-page:not(.is-chrome-in) .planet-page__gauge {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.planet-page.is-chrome-in .planet-page__return-cue,
+.planet-page.is-chrome-in .planet-page__return-dock,
+.planet-page.is-chrome-in .planet-page__gauge {
+  /* 0.5s delay: arrives just after the first section's content has
+     bloomed in, not with it. `backwards` holds the hidden state through
+     the delay. */
+  animation: planet-chrome-in 0.7s var(--ease-premium) 0.5s backwards;
+}
+
+@keyframes planet-chrome-in {
+  from {
+    opacity: 0;
+  }
+}
+
 .planet-page:focus {
   outline: none;
 }
@@ -422,6 +452,21 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.4),
     inset 0 -20px 44px -24px rgba(159, 232, 217, 0.3),
     0 10px 34px rgba(0, 0, 0, 0.35);
+}
+
+/* Glass over the ghost-cursor canvas: the Clouds stage hosts a WebGL canvas
+   that redraws every frame, and a backdrop-filter has to re-blur whatever
+   is behind it each time. A 26px blur + saturate on several cards at once
+   (7 on Skills) made those pages laggy while Contact — whose cards sit in
+   the canvas-free Land stage — stayed smooth. A small radius keeps the
+   frosted look at a fraction of the cost. Guarded so it doesn't override
+   the reduced-transparency fallback (backdrop-filter: none). */
+@media (prefers-reduced-transparency: no-preference) {
+  .planet-section--clouds .liquid-glass {
+    --glass-blur: 8px;
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    backdrop-filter: blur(var(--glass-blur));
+  }
 }
 
 /* --section-photo: see the comment on the Projects rules above. */
@@ -870,12 +915,10 @@
 /* Return cue: the pull-gesture gauge only now — the line stretches with
    an upward pull and bows out as soon as the descent starts (scrubbed in
    main.js), same as before. The clickable button lives in .planet-page__return-dock
-   below: it starts docked right next to this cue (same top offset,
-   centered) but slides to the top-left corner as the same descent begins
-   (createPlanetScrollFX, main.js) and stays there, docked and clickable,
-   for the rest of the page — the user always has a way back without
-   scrolling all the way up. Escape is the keyboard path back regardless
-   of where either of these are. */
+   below: it sits in the top-left corner from the start and stays there,
+   docked and clickable, for the rest of the page — the user always has a
+   way back without scrolling all the way up. Escape is the keyboard path
+   back regardless of where either of these are. */
 .planet-page__return-cue {
   position: fixed;
   top: var(--space-5);
@@ -896,12 +939,9 @@
   animation: return-cue-pulse 2.2s var(--ease-premium) infinite;
 }
 
-/* Dock: the position/slide layer. main.js measures the gap between this
-   rest position and its corner target once per page-open and drives the
-   slide via a scrubbed x transform on THIS element — kept separate from
-   .planet-page__return-btn below so GSAP's inline transform never
-   clobbers that button's own hover/press transforms (inline style always
-   wins over a stylesheet rule, so the two can't share one element). */
+/* Dock: the fixed top-left position layer, kept separate from
+   .planet-page__return-btn below so that button's own hover/press
+   transforms never fight its positioning. */
 .planet-page__return-dock {
   position: fixed;
   top: var(--space-5);

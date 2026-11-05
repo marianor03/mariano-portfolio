@@ -302,6 +302,8 @@ function startTakeover(takeover) {
     });
     if (orbit) seq.to(orbit, { opacity: 1, duration: 0.6, ease: 'power1.out' }, '+=0.3');
     if (menuCue) seq.to(menuCue, { opacity: 1, duration: 0.6, ease: 'power1.out' }, '<');
+    const sunFx = takeover.querySelectorAll('.takeover__sun-ring, .takeover__sun-label');
+    if (sunFx.length) seq.to(sunFx, { opacity: 1, duration: 0.6, ease: 'power1.out' }, '<');
     return;
   }
 
@@ -359,6 +361,19 @@ function startTakeover(takeover) {
       menuCue,
       { opacity: 0, y: 16, filter: 'blur(6px)' },
       { opacity: 1, y: 0, filter: 'blur(0px)', duration: 0.9, ease: 'power2.out' },
+      'burst+=1.1'
+    );
+  }
+  // The sun's ring + "Back to start" cue arrive on the same beat as the
+  // menu title and its cue, not with the ignition.
+  const sunRing = takeover.querySelector('.takeover__sun-ring');
+  const sunLabel = takeover.querySelector('.takeover__sun-label');
+  if (sunRing) seq.to(sunRing, { opacity: 1, duration: 0.9, ease: 'power2.out' }, 'burst+=1.1');
+  if (sunLabel) {
+    seq.fromTo(
+      sunLabel,
+      { opacity: 0, '--rise': '16px' },
+      { opacity: 1, '--rise': '0px', duration: 0.9, ease: 'power2.out' },
       'burst+=1.1'
     );
   }
@@ -473,6 +488,14 @@ function resetTakeover(takeover) {
   setPlanetsEnabled(takeover, false);
   gsap.set(takeover.querySelector('[data-takeover-loader]'), { opacity: 0 });
   gsap.set(takeover.querySelector('[data-takeover-menu-cue]'), { opacity: 0 });
+  gsap.set(takeover.querySelectorAll('.takeover__sun-ring, .takeover__sun-label'), { opacity: 0 });
+  // closePlanetPage hard-sets the sun glow (part of the galaxy chrome) to an
+  // inline opacity:1 so it comes back lit after a planet visit. That inline
+  // value outlives the visit and beats the stylesheet, so on the next trip
+  // through the hero the glow showed up with the loader before any sun
+  // existed. Clearing it hands control back to `.is-sun` in the CSS.
+  const sunGlow = takeover.querySelector('.takeover__sunglow');
+  if (sunGlow) gsap.set(sunGlow, { clearProps: 'opacity' });
   const particlesContainer = takeover.querySelector('[data-takeover-particles]');
   if (particlesContainer) gsap.set(particlesContainer, { opacity: 0 });
   const orbit = takeover.querySelector('[data-takeover-orbit]');
@@ -548,6 +571,37 @@ function setPlanetsEnabled(takeover, enabled) {
   takeover.querySelectorAll('[data-planet-target]').forEach((btn) => {
     btn.disabled = !enabled;
   });
+  // The sun button shares the planets' lifecycle: live once the sun ignites,
+  // inert while a planet page is opening/open or the scene is reset.
+  const sunBtn = takeover.querySelector('[data-sun-btn]');
+  if (sunBtn) sunBtn.disabled = !enabled;
+}
+
+let sunReturnTween = null;
+
+// The sun's click: rewind the page to the landing hero. The hero is a
+// scroll-scrubbed pin, so "going back" is just scrolling up — a single eased
+// tween of scrollY plays the whole sequence in reverse (the scrub follows
+// it, and resetTakeover() tears the scene down once it passes the blackout).
+function returnToLanding() {
+  if (activePlanetPage || planetTransitionRunning || sunReturnTween) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    return;
+  }
+  const pos = { y: window.scrollY };
+  // Any manual scroll input takes the wheel back instead of fighting it.
+  const abort = () => sunReturnTween && sunReturnTween.kill();
+  window.addEventListener('wheel', abort, { passive: true, once: true });
+  window.addEventListener('touchstart', abort, { passive: true, once: true });
+  sunReturnTween = gsap.to(pos, {
+    y: 0,
+    duration: 2.2,
+    ease: 'power2.inOut',
+    onUpdate: () => window.scrollTo({ top: pos.y, behavior: 'instant' }),
+    onComplete: () => (sunReturnTween = null),
+    onInterrupt: () => (sunReturnTween = null),
+  });
 }
 
 function initPlanetPages() {
@@ -565,6 +619,8 @@ function initPlanetPages() {
     btn.addEventListener('focus', pauseOrbitForHover);
     btn.addEventListener('blur', resumeOrbitFromHover);
   });
+  const sunBtn = takeover.querySelector('[data-sun-btn]');
+  if (sunBtn) sunBtn.addEventListener('click', returnToLanding);
   document.querySelectorAll('[data-planet-page]').forEach((page) => createReturnPull(page));
   document.querySelectorAll('[data-return-btn]').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -633,6 +689,21 @@ function galaxyChrome(takeover, exceptBtn) {
   ].filter(Boolean);
 }
 
+// Parks the return button at the page's top-center (beside the pull cue).
+// Must run while the page is still transparent — the dock's corner rest
+// position is its CSS default, so setting the offset any later (it used to
+// happen once the page finished landing) shows it in the corner first and
+// then jumps. Measured off the laid-out rect since it depends on viewport
+// width and the button's own text width.
+function placeReturnDock(page) {
+  const dock = page.querySelector('[data-return-dock]');
+  if (!dock) return;
+  gsap.set(dock, { clearProps: 'x' });
+  if (window.matchMedia('(max-width: 700px)').matches) return;
+  const rect = dock.getBoundingClientRect();
+  gsap.set(dock, { x: window.innerWidth / 2 - (rect.left + rect.width / 2) });
+}
+
 function openPlanetPage(takeover, btn) {
   if (activePlanetPage || planetTransitionRunning) return;
   if (!takeover.classList.contains('is-sun')) return;
@@ -643,12 +714,21 @@ function openPlanetPage(takeover, btn) {
   if (!page || !veil) return;
 
   planetTransitionRunning = true;
+  takeover.classList.add('is-diving');
   if (orbitSystem) orbitSystem.pause();
   setPlanetsEnabled(takeover, false);
 
   page.hidden = false;
   page.scrollTop = 0;
   gsap.set(page, { opacity: 0 });
+  placeReturnDock(page);
+  // Built NOW, while the page is still transparent, not at touchdown: the
+  // FX apply their starting states the moment they're created (backdrops
+  // jump to scale 1.09 and blur, later stages hide). Doing that after the
+  // page had already faded in was the visible glitch — the background
+  // flickered and zoomed in as if re-fitting itself. Layout exists as soon
+  // as `hidden` is off, so nothing here needs the page to be visible.
+  planetFxCtx = createPlanetScrollFX(page);
 
   // Deliberately NOT the particle field: the stars stay up during the dive
   // so the takeover-wide zoom streaks them outward past the camera — the
@@ -680,24 +760,33 @@ function openPlanetPage(takeover, btn) {
     planetTransitionRunning = false;
     planetOpenTl = null;
     delete page.dataset.landing; // safety net; normally cleared at touchdown
-    // Scroll-driven FX need real layout — the page is visible now.
-    planetFxCtx = createPlanetScrollFX(page);
+    // Scroll FX were created at the start of the landing (see
+    // openPlanetPage). Chrome fades in here if the timeline's own beat was
+    // skipped (Escape/reduced motion jump straight to the end).
+    page.classList.add('is-chrome-in');
     const logoLoopEl = page.querySelector('[data-logo-loop]');
     if (logoLoopEl && !logoLoopInstance) {
       logoLoopInstance = initLogoLoop(logoLoopEl, SKILL_ICONS, { speed: 36, gap: 56, logoHeight: 30 });
     }
     const ghostCursorEl = page.querySelector('[data-ghost-cursor]');
-    // Skipped on mobile: it's a cursor trail with no real cursor to trail
-    // on a touch screen, it's the heaviest thing on the page (a whole
-    // WebGL context + Three.js), and it's the one thing implicated in a
-    // mobile-Safari-only rendering bug (a shader in its post-processing
-    // chain, prone to the exact kind of precision quirk that varies by
-    // GPU). Not worth keeping for a device class it wasn't built for.
+    // Skipped on mobile entirely: it's a cursor trail with no real cursor
+    // to trail on a touch screen, it's the heaviest thing on the page (a
+    // whole WebGL context + Three.js), and it's the one thing implicated
+    // in a mobile-Safari-only rendering bug (a shader in its
+    // post-processing chain, prone to the exact kind of precision quirk
+    // that varies by GPU). Not worth keeping for a device class it wasn't
+    // built for.
+    //
+    // Gated on actual input capability (`pointer: fine`), not a width
+    // breakpoint — a `max-width: 700px` check let it through on any touch
+    // device wider than that (tablets, phones held in landscape), which is
+    // exactly the "still bugging on mobile" case: the shader was still
+    // trying to follow a cursor that was never going to move.
     if (
       ghostCursorEl &&
       !ghostCursorInstance &&
       !window.matchMedia('(prefers-reduced-motion: reduce)').matches &&
-      !window.matchMedia('(max-width: 700px)').matches
+      window.matchMedia('(pointer: fine)').matches
     ) {
       // Every planet's Clouds stage gets this now, tinted with that page's
       // own --pp-accent (read live off the page rather than duplicating
@@ -774,12 +863,14 @@ function openPlanetPage(takeover, btn) {
   // Slide + blur-in from the bottom. Opacity resolves fast (the black
   // behind makes a slow fade read as murk); position and focus carry the
   // motion. Strong ease-out, no bounce — "smoothly slides".
-  tl.fromTo(
-    page,
-    { yPercent: 9, filter: 'blur(14px)' },
-    { yPercent: 0, filter: 'blur(0px)', duration: 0.95, ease: 'power3.out' },
-    2.15
-  );
+  // No filter blur on the page itself: animating `filter` on this
+  // full-viewport element (stacked section photos + backdrop-filter glass
+  // cards inside) re-rasterizes all of it every frame — that was the lag in
+  // the second half of the dive. Slide + opacity are compositor-only.
+  tl.fromTo(page, { yPercent: 9 }, { yPercent: 0, duration: 0.95, ease: 'power3.out' }, 2.15);
+  // The galaxy is fully covered by the opaque veil from here on: stop
+  // painting it (restored by closePlanetPage before the return reveals it).
+  tl.call(() => (takeover.style.visibility = 'hidden'), [], 1.3);
   tl.to(page, { opacity: 1, duration: 0.35, ease: 'power1.out' }, 2.15);
   // Touchdown settled — release the observer gate and let the first
   // section's content bloom, once the page's own slide-in blur is down to
@@ -788,6 +879,7 @@ function openPlanetPage(takeover, btn) {
     delete page.dataset.landing;
     const first = page.querySelector('.planet-section');
     if (first) first.classList.add('is-visible');
+    page.classList.add('is-chrome-in');
   }, [], 2.65);
 }
 
@@ -795,6 +887,7 @@ function closePlanetPage() {
   if (!activePlanetPage || planetTransitionRunning) return;
   const { page, takeover, name } = activePlanetPage;
   planetTransitionRunning = true;
+  takeover.style.visibility = '';
 
   // Scroll FX first: their ScrollTriggers reference this page's scroller
   // and must not survive into the hidden state.
@@ -827,7 +920,10 @@ function closePlanetPage() {
 
   const cleanup = () => {
     page.hidden = true;
+    page.classList.remove('is-chrome-in');
     gsap.set(page, { clearProps: 'transform,opacity,filter' });
+    const dock = page.querySelector('[data-return-dock]');
+    if (dock) gsap.set(dock, { clearProps: 'x' });
     gsap.set(takeover, { clearProps: 'transform,transformOrigin' });
     if (btn) gsap.set(btn, { clearProps: 'transform' });
     if (label) gsap.set(label, { clearProps: 'opacity' });
@@ -847,6 +943,7 @@ function closePlanetPage() {
     if (orbitSystem) orbitSystem.resume();
     activePlanetPage = null;
     planetTransitionRunning = false;
+    takeover.classList.remove('is-diving');
     setPlanetsEnabled(takeover, true);
   };
 
@@ -881,7 +978,7 @@ function closePlanetPage() {
 
   const tl = gsap.timeline({ onComplete: cleanup });
   // 1. The page lifts away (mirror of the touchdown slide).
-  tl.to(page, { yPercent: 10, opacity: 0, filter: 'blur(12px)', duration: 0.55, ease: 'power2.in' }, 0);
+  tl.to(page, { yPercent: 10, opacity: 0, duration: 0.55, ease: 'power2.in' }, 0);
   // 2. The atmosphere flash clears...
   if (veil) tl.to(veil, { opacity: 0, duration: 0.4, ease: 'power1.inOut' }, 0.45);
   // 3. ...and the camera launches back out to orbit distance.
@@ -986,23 +1083,13 @@ function createPlanetScrollFX(page) {
       });
     }
 
-    // Return button: docks in the top-left corner by default (its CSS rest
-    // position) but sits shifted right on open so it visually starts
-    // centered next to the cue above. That shift is measured off the
-    // dock's own laid-out rect rather than hardcoded, since it depends on
-    // viewport width and the button's own text width. Scrolling into the
-    // descent scrubs it back to 0 — same trigger window as the cue — so it
-    // slides home into the corner and stays there, clickable, for the rest
-    // of the page. No fade: unlike the cue, this is the user's persistent
-    // way back without scrolling all the way up.
-    // Mobile skips the slide entirely and stays locked in the corner: the
-    // narrower the screen, the less room there is for a button to travel
-    // across before it's back where content already needs the space.
+    // Return button: opens centered beside the cue (placed by
+    // placeReturnDock BEFORE the page fades in, so it never flashes in the
+    // corner first) and scrubs home to the top-left corner over the same
+    // window as the cue, staying there, clickable, for the rest of the page.
+    // Mobile keeps it locked in the corner (placeReturnDock skips it too).
     const dock = page.querySelector('[data-return-dock]');
     if (dock && !window.matchMedia('(max-width: 700px)').matches) {
-      const rect = dock.getBoundingClientRect();
-      const centeredX = window.innerWidth / 2 - (rect.left + rect.width / 2);
-      gsap.set(dock, { x: centeredX });
       gsap.to(dock, {
         x: 0,
         ease: 'none',

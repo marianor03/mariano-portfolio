@@ -68,43 +68,50 @@ const fragmentShader = `
      introducing an unrelated second hue. */
   vec3 tint2(vec3 base){ return base; }
 
-  vec4 blob(vec2 p, vec2 mousePos, float intensity, float activity) {
+  /* The smoke field depends only on the pixel, not on where any blob's
+     center is — every blob in the trail shares the exact same value here.
+     Evaluated once per pixel (25 noise calls) instead of once per blob
+     (29 x 25), which was the whole cost of this shader. */
+  float smokeAlpha(vec2 p) {
     vec2 q = vec2(fbm(p * iScale + iTime * 0.1), fbm(p * iScale + vec2(5.2,1.3) + iTime * 0.1));
     vec2 r = vec2(fbm(p * iScale + q * 1.5 + iTime * 0.15), fbm(p * iScale + q * 1.5 + vec2(8.3,2.8) + iTime * 0.15));
+    return pow(fbm(p * iScale + r * 0.8), 2.5);
+  }
 
-    float smoke = fbm(p * iScale + r * 0.8);
-    float radius = 0.5 + 0.3 * (1.0 / iScale);
-    float distFactor = 1.0 - smoothstep(0.0, radius * activity, length(p - mousePos));
-    float alpha = pow(smoke, 2.5) * distFactor;
-
-    vec3 c1 = tint1(iBaseColor);
-    vec3 c2 = tint2(iBaseColor);
-    vec3 color = mix(c1, c2, sin(iTime * 0.5) * 0.5 + 0.5);
-
-    return vec4(color * alpha * intensity, alpha * intensity);
+  /* Only the falloff around one blob's center is per-blob. */
+  float blobFalloff(vec2 p, vec2 mousePos, float radius, float activity) {
+    return 1.0 - smoothstep(0.0, radius * activity, length(p - mousePos));
   }
 
   void main() {
-    vec2 uv = (gl_FragCoord.xy / iResolution.xy * 2.0 - 1.0) * vec2(iResolution.x / iResolution.y, 1.0);
-    vec2 mouse = (iMouse * 2.0 - 1.0) * vec2(iResolution.x / iResolution.y, 1.0);
+    vec2 aspect = vec2(iResolution.x / iResolution.y, 1.0);
+    vec2 uv = (gl_FragCoord.xy / iResolution.xy * 2.0 - 1.0) * aspect;
+    vec2 mouse = (iMouse * 2.0 - 1.0) * aspect;
 
-    vec3 colorAcc = vec3(0.0);
-    float alphaAcc = 0.0;
+    float radius = 0.5 + 0.3 * (1.0 / iScale);
 
-    vec4 b = blob(uv, mouse, 1.0, iOpacity);
-    colorAcc += b.rgb;
-    alphaAcc += b.a;
+    // Weighted sum of every blob's falloff (head weight 1.0, trail weights
+    // decaying). The color is the same for all of them, so it's applied once.
+    float weight = blobFalloff(uv, mouse, radius, iOpacity);
 
     for (int i = 0; i < MAX_TRAIL_LENGTH; i++) {
-      vec2 pm = (iPrevMouse[i] * 2.0 - 1.0) * vec2(iResolution.x / iResolution.y, 1.0);
       float t = 1.0 - float(i) / float(MAX_TRAIL_LENGTH);
       t = pow(t, 2.0);
       if (t > 0.01) {
-        vec4 bt = blob(uv, pm, t * 0.8, iOpacity);
-        colorAcc += bt.rgb;
-        alphaAcc += bt.a;
+        vec2 pm = (iPrevMouse[i] * 2.0 - 1.0) * aspect;
+        weight += t * 0.8 * blobFalloff(uv, pm, radius, iOpacity);
       }
     }
+
+    // Nothing within reach of this pixel: skip the noise entirely.
+    if (weight <= 0.0) {
+      gl_FragColor = vec4(0.0);
+      return;
+    }
+
+    float alphaAcc = smokeAlpha(uv) * weight;
+    vec3 color = mix(tint1(iBaseColor), tint2(iBaseColor), sin(iTime * 0.5) * 0.5 + 0.5);
+    vec3 colorAcc = color * alphaAcc;
 
     colorAcc *= iBrightness;
 

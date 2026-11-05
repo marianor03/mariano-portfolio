@@ -54,35 +54,43 @@
     <link rel="stylesheet" href="/src/styles/rotatingText.css" />
   </head>
   <body>
-    <a class="skip-link" href="#main">Skip to main content</a>
 
     <main id="main">
       <!-- HERO — pinned three-portrait scroll sequence -->
       <section id="hero" class="hero" data-hero data-section="hero">
         <div class="hero__photo-panel">
           <div class="hero__frame" data-hero-frame>
-            <img
-              class="hero__image"
-              data-hero-image
-              src="/images/portraits/profile-left.jpg"
-              alt="Mariano Regalado, studio portrait, left profile"
-            />
+            <picture>
+              <source srcset="/images/portraits/profile-left.webp" type="image/webp" />
+              <img
+                class="hero__image"
+                data-hero-image
+                src="/images/portraits/profile-left.jpg"
+                alt="Mariano Regalado, studio portrait, left profile"
+              />
+            </picture>
           </div>
           <div class="hero__frame" data-hero-frame>
-            <img
-              class="hero__image"
-              data-hero-image
-              src="/images/portraits/frontal.jpg"
-              alt="Mariano Regalado, studio portrait, facing forward"
-            />
+            <picture>
+              <source srcset="/images/portraits/frontal.webp" type="image/webp" />
+              <img
+                class="hero__image"
+                data-hero-image
+                src="/images/portraits/frontal.jpg"
+                alt="Mariano Regalado, studio portrait, facing forward"
+              />
+            </picture>
           </div>
           <div class="hero__frame" data-hero-frame>
-            <img
-              class="hero__image"
-              data-hero-image
-              src="/images/portraits/arms-crossed.jpg"
-              alt="Mariano Regalado, studio portrait, arms crossed, half body"
-            />
+            <picture>
+              <source srcset="/images/portraits/arms-crossed.webp" type="image/webp" />
+              <img
+                class="hero__image"
+                data-hero-image
+                src="/images/portraits/arms-crossed.jpg"
+                alt="Mariano Regalado, studio portrait, arms crossed, half body"
+              />
+            </picture>
           </div>
           <div class="hero__loader" data-hero-loader aria-hidden="true"></div>
         </div>
@@ -355,6 +363,24 @@
           </defs>
         </svg>
       </div>
+
+      <!-- The sun is also the way home: a real button laid over it (outside
+           .blobs so the goo filter can't touch it — the sun itself stays
+           exactly as drawn). Its ring + label are the affordance; enabled
+           once the sun ignites (main.js toggles `disabled`). -->
+      <button
+        class="takeover__sun-btn"
+        type="button"
+        data-sun-btn
+        aria-label="Back to landing page"
+        disabled
+      >
+        <span class="takeover__sun-ring" aria-hidden="true"></span>
+        <span class="takeover__sun-label liquid-glass" aria-hidden="true">
+          <svg viewBox="0 0 16 16" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V3M3.5 7.5 8 3l4.5 4.5" /></svg>
+          Back to start
+        </span>
+      </button>
 
       <!-- Explains the scene's actual purpose: these orbiting bodies are
            the site menu. Revealed once the sun ignites and the planets

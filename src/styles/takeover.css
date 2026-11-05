@@ -165,6 +165,140 @@
   transition: none;
 }
 
+/* Sun-as-button. The hit area is exactly the sun's disc (30px ball x
+   --sun-scale); the sun's own pixels are never restyled. The affordance
+   lives around it: a hairline ring held just off the surface that breathes
+   slowly, and a glass label below that says where it goes. Hover/focus
+   tightens the ring and warms the glow — the sun answers like a lit
+   control without changing shape or color. */
+.takeover__sun-btn {
+  --sun-d: calc(30px * var(--sun-scale));
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: var(--z-raised);
+  width: var(--sun-d);
+  height: var(--sun-d);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text);
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Not clickable until the sun ignites (main.js toggles `disabled`). The
+   button itself is always "there"; what's seen is its ring and label, which
+   main.js fades in on the menu cue's beat (startTakeover). */
+.takeover__sun-btn:disabled {
+  pointer-events: none;
+  cursor: default;
+}
+
+/* Static ring: no looping animation (a perpetual breathe forced a repaint
+   of the glow every frame and fought the scene's other animations), and the
+   hover states below move it with transform only — compositor-only, so it
+   never touches layout or repaints the glow. */
+.takeover__sun-ring {
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 217, 138, 0.6);
+  /* Hidden until main.js fades it in with the menu cue. */
+  opacity: 0;
+  /* Hover/press change COLOR only: no box-shadow, no transform transition.
+     Anything that promotes this element to its own compositor layer on
+     hover (a transitioning transform, a blurred shadow) re-composites
+     against the sun underneath, and that re-composite is what flashed the
+     cross. The sun's own glow already comes from .takeover__sunglow. */
+  transition: border-color 0.2s var(--ease-premium);
+  pointer-events: none;
+}
+
+/* The scene is mid-dive (or a planet page is open): the whole takeover is
+   being scaled ~3x, and this button's glow + glass label would be
+   re-rasterized every frame at that scale — it was the only thing in the
+   scene not fading out with the rest of the galaxy chrome. Gone for the
+   duration, back when the orbit returns. */
+.takeover.is-diving .takeover__sun-btn {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.25s var(--ease-premium),
+    visibility 0s linear 0.25s;
+}
+
+/* Compact pill that reads as its own button (it's part of the sun's single
+   <button>, so clicking either does the same thing). --rise is the entrance
+   offset main.js tweens to 0, so the cue lifts in like the menu title's cue
+   without GSAP's inline transform clobbering the hover transform. */
+.takeover .takeover__sun-label {
+  --rise: 0px;
+  position: absolute;
+  top: calc(100% + 22px);
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0.38em 0.85em;
+  border-radius: 999px;
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--color-accent);
+  border-color: rgba(255, 217, 138, 0.45);
+  /* Solid tint instead of the glass material's backdrop blur: a
+     backdrop-filter re-samples (and so re-composites) whatever is behind it
+     on every hover change, and what's behind this is the sun. */
+  background: rgba(24, 14, 6, 0.6);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  opacity: 0;
+  transform: translateX(-50%) translateY(var(--rise));
+  transition:
+    color 0.2s var(--ease-premium),
+    border-color 0.2s var(--ease-premium),
+    background-color 0.2s var(--ease-premium);
+  pointer-events: auto;
+}
+
+.takeover__sun-label svg {
+  width: 10px;
+  height: 10px;
+}
+
+@media (hover: hover) {
+  .takeover__sun-btn:hover .takeover__sun-ring {
+    border-color: rgba(255, 217, 138, 1);
+  }
+
+  .takeover__sun-btn:hover .takeover__sun-label {
+    color: var(--color-text);
+    border-color: rgba(255, 217, 138, 0.9);
+    background-color: rgba(60, 34, 12, 0.7);
+  }
+}
+
+.takeover__sun-btn:active .takeover__sun-label {
+  background-color: rgba(90, 50, 16, 0.8);
+}
+
+.takeover__sun-btn:focus-visible {
+  outline: none;
+}
+
+.takeover__sun-btn:focus-visible .takeover__sun-ring {
+  border-color: var(--color-text);
+}
+
+.takeover.is-resetting .takeover__sun-btn {
+  transition: none;
+}
+
 .takeover .blob {
   position: absolute;
   background: var(--color-text);
@@ -217,6 +351,17 @@
 .takeover.is-settled .blob {
   animation: none;
   opacity: 0;
+}
+
+/* The goo filter only exists to merge the loader's blobs. Once settled
+   they're gone and the sun is a single ball, so the SVG filter is dropped:
+   it did nothing useful there, and a reference filter on a layer that other
+   layers (the sun button's ring) repaint over re-rasterizes on every hover
+   change — that was the cross-shaped flicker inside the ring. Safe to swap
+   here: the ball is still at scale 0 at this instant (takeover-ball-in grows
+   it from nothing), so nothing visible changes. */
+.takeover.is-settled .blobs {
+  filter: none;
 }
 
 .takeover.is-settled .blob-center {
